@@ -138,8 +138,8 @@ def main():
             print cont_id
             print_id=0
                     
-    prop_df.to_csv(prop_outpath)
-    cont_df.to_csv(cont_outpath)
+    prop_df.to_csv(prop_outpath,index=False)
+    cont_df.to_csv(cont_outpath,index=False)
     
 if __name__ == '__main__':
     main()

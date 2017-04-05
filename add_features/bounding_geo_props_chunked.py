@@ -2,6 +2,8 @@
 """
 @authors: Kylen Solvik
 Date Create: 3/8/17
+The chunked version of this program continuously writes out the dataframes to csv. 
+This could be a big advantage if I want to parallelize. 
 """
 
 import sys
@@ -16,13 +18,21 @@ import math
 # Set some input variables
 im_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/shapeAnalysis/wat_only_morph.tif'
 training_csv_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/training_points/'
-prop_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_foodist2.csv'
-cont_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours_foodist2.csv'
+prop_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_foodist3.csv'
+cont_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours_foodist3.csv'
+
 shapenames = ['obj','approx','hull','rect']
-colnames = ['id', 'mu02', 'mu03', 'tri_match1', 'circ_rad', 'tri_match3', 'tri_match2', 'm11', 'nu02', 'm12', 'mu21', 'mu20', 'nu20', 'circ_rsq', 'hull_area', 'm30', 'obj_area', 'nu21', 'mu11', 'mu12', 'hull_perim', 'rect_perim', 'eq_diam', 'solidity', 'approx_area', 'nu11', 'nu12', 'm02', 'm03', 'm00', 'm01', 'mu30', 'class', 'nu30', 'nu03', 'm10', 'm20', 'm21', 'approx_perim', 'rect_area', 'obj_perim']
+colnames = ['id', 'class','mu02', 'mu03', 'tri_match1', 'circ_rad', 'tri_match3', 'tri_match2', 'm11', 'nu02', 'm12', 'mu21', 'mu20', 'nu20', 'circ_rsq', 'hull_area', 'm30', 'obj_area', 'nu21', 'mu11', 'mu12', 'hull_perim', 'rect_perim', 'eq_diam', 'solidity', 'approx_area', 'nu11', 'nu12', 'm02', 'm03', 'm00', 'm01', 'mu30', 'nu30', 'nu03', 'm10', 'm20', 'm21', 'approx_perim', 'rect_area', 'obj_perim']
+
+# Triangle shape to rune openCV's matchShapes against
 triangle_shape = np.asarray([[[0,0]], [[4,0]], [[2,6]]])
 
+# Area cutoff, in pixels. Won't try to analyze anything bigger than this. 
 area_cutoff = 500000
+
+# Size of chunks to write out to csv
+chunksize = 100
+
 # Function to read in image and save as array
 def read_image(filepath):
     file_handle = gdal.Open(filepath)
@@ -41,14 +51,14 @@ def cont_features(obj):
     # Object moments
     shp_feats = cv2.moments(obj)
 
+    # Check if above area cutoff
     if shp_feats['m00']>area_cutoff:
         shp_feats['obj_area'] = shp_feats['m00']
         return(shp_feats)
+    
     # Match with triangle shape
     for match_meth in range(1,4):
         shp_feats['tri_match'+str(match_meth)] = cv2.matchShapes(obj,triangle_shape,match_meth,0)
-
-
         
     # Get areas and all that good stuff
     for shp in shapenames :
@@ -73,7 +83,6 @@ def derived_features(fd):
 def get_pixel_xy(gt,pos):
     x=int((pos[0] - gt[0])/gt[1])
     y=int((pos[1] - gt[3])/gt[5])
-    #print x,y
     return(x,y)
             
 # Function to check if contour contains either a res or nonres point
@@ -106,48 +115,62 @@ def main():
     # Get contours
     im2, contours, hierarchy = cv2.findContours(wat_im,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     print('Number of Objects:' + str(len(contours)))
-    # Create array for storing contours
-    cont_df = pd.DataFrame(columns=['id','contour'])
-    cont_df['contour'].astype(object)
 
-    prop_df = prop_df = pd.DataFrame(columns = colnames)
+    # Create dataframes and csvs for storing data.
+    temp_cont_df = pd.DataFrame(columns=['id','contour'])
+    temp_cont_df['contour'].astype(object)
+    temp_prop_df = pd.DataFrame(columns = colnames)
 
-    prop_df.to_csv(prop_outpath)
-    cont_df.to_csv(cont_outpath)
+    temp_prop_df.to_csv(prop_outpath)
+    temp_cont_df.to_csv(cont_outpath)
     
+    # Set indices
     cont_id = 0
-    print_id = 0
+    print_id = 1
     
     for cnt in contours:
+        if print_id == 1:
+            prop_df = temp_prop_df
+            cont_df = temp_cont_df
         feat_dict = cont_features(cnt)
+
         if feat_dict['obj_area']==0:
             continue
         elif feat_dict['obj_area']>area_cutoff:
             prop_df.loc[cont_id,['id','obj_area']] = [cont_id] + [feat_dict['obj_area']]
-            print("Too Big!")
+            print('Too Big!')
         else:
             feat_dict = derived_features(feat_dict)
-            
             feat_dict['class'] = set_train_class(cnt,res_csv,nonres_csv,geotrans) 
-            
-            if 'prop_df' not in locals():
-                colnames = ['id'] + feat_dict.keys()
-                print(colnames)
-                prop_df = pd.DataFrame(columns = colnames)
-                
-                
             prop_df.loc[cont_id,colnames] = [cont_id] + feat_dict.values()
 
         cont_df.loc[cont_id] = [cont_id] + [cnt.tolist()]
                 
+        if print_id == chunksize:
+            print cont_id + 1
+            print_id = 0
+            prop_df.to_csv(prop_outpath,
+                           index=False,
+                           header=False,
+                           mode='a',#append data to csv file
+                           chunksize=chunksize)#size of data to append for each loop
+            cont_df.to_csv(cont_outpath,
+                           index=False,
+                           header=False,
+                           mode='a',#append data to csv file
+                           chunksize=chunksize)#size of data to append for each loop
         cont_id+=1
         print_id+=1
-        if print_id > 99 :
-            print cont_id
-            print_id=0
-                    
-    prop_df.to_csv(prop_outpath)
-    cont_df.to_csv(cont_outpath)
+        
+    prop_df.to_csv(prop_outpath,
+                   index=False,
+                   header=False,
+                   mode='a')
+    cont_df.to_csv(cont_outpath,
+                   index=False,
+                   header=False,
+                   mode='a')#append data to csv file
+                   
     
 if __name__ == '__main__':
     main()
