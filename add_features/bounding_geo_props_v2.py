@@ -19,7 +19,7 @@ training_csv_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_att
 prop_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_foodist2.csv'
 cont_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours_foodist2.csv'
 shapenames = ['obj','approx','hull','rect']
-
+colnames = ['id', 'mu02', 'mu03', 'tri_match1', 'circ_rad', 'tri_match3', 'tri_match2', 'm11', 'nu02', 'm12', 'mu21', 'mu20', 'nu20', 'circ_rsq', 'hull_area', 'm30', 'obj_area', 'nu21', 'mu11', 'mu12', 'hull_perim', 'rect_perim', 'eq_diam', 'solidity', 'approx_area', 'nu11', 'nu12', 'm02', 'm03', 'm00', 'm01', 'mu30', 'class', 'nu30', 'nu03', 'm10', 'm20', 'm21', 'approx_perim', 'rect_area', 'obj_perim']
 triangle_shape = np.asarray([[[0,0]], [[4,0]], [[2,6]]])
 
 area_cutoff = 500000
@@ -109,8 +109,15 @@ def main():
     # Create array for storing contours
     cont_df = pd.DataFrame(columns=['id','contour'])
     cont_df['contour'].astype(object)
+
+    prop_df = prop_df = pd.DataFrame(columns = colnames)
+
+    prop_df.to_csv(prop_outpath)
+    cont_df.to_csv(cont_outpath)
+    
     cont_id = 0
     print_id = 0
+    
     for cnt in contours:
         feat_dict = cont_features(cnt)
         if feat_dict['obj_area']==0:
@@ -125,6 +132,7 @@ def main():
             
             if 'prop_df' not in locals():
                 colnames = ['id'] + feat_dict.keys()
+                print(colnames)
                 prop_df = pd.DataFrame(columns = colnames)
                 
                 
