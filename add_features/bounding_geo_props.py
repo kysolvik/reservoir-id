@@ -20,7 +20,7 @@ prop_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribut
 cont_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours_foodist2.csv'
 shapenames = ['obj','approx','hull','rect']
 
-triangle_shape = np.asarray([[[0,0]], [[4,0]], [[2,6]]])
+triangle_shape = np.asarray([[[0,0]], [[4,0]], [[2,12]]])
 
 area_cutoff = 500000
 # Function to read in image and save as array
