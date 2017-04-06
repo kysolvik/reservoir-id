@@ -14,9 +14,9 @@ import ast
 
 # Set some input variables
 im_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/shapeAnalysis/wat_only_morph.tif'
-cont_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours_full.csv'
-prop_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict1.csv'
-im_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/output_contours3.tif'
+cont_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours.csv'
+prop_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict.csv'
+im_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/output_contours.tif'
 
 # Set which column holds the prediction in the prop_df
 predict_column = 'rf_pred'
