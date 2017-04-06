@@ -27,8 +27,8 @@ acut_small = 0
 acut_large = 500000
 
 # Load dataset
-filepath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_full.csv"
-outpath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict1.csv"
+filepath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table.csv"
+outpath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict.csv"
 dataset = pandas.read_csv(filepath,header=0)
 dataset_acut_large = dataset.loc[dataset['obj_area'] < acut_large]
 dataset_acut = dataset_acut_large.loc[dataset_acut_large['obj_area'] > acut_small]
@@ -55,6 +55,7 @@ X_scaled = preprocessing.scale(X)
 # Select only classified data
 X_scaled_classified = X_scaled[Y > 0]
 Y_classified = Y[Y > 0]
+
 
 validation_size = 0.2
 seed = 7

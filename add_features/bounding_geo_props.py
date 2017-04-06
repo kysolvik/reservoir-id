@@ -16,11 +16,11 @@ import math
 # Set some input variables
 im_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/shapeAnalysis/wat_only_morph.tif'
 training_csv_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/training_points/'
-prop_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_foodist2.csv'
-cont_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours_foodist2.csv'
+prop_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table.csv'
+cont_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours.csv'
 shapenames = ['obj','approx','hull','rect']
 
-triangle_shape = np.asarray([[[0,0]], [[4,0]], [[2,6]]])
+triangle_shape = np.asarray([[[0,0]], [[4,0]], [[2,12]]])
 
 area_cutoff = 500000
 # Function to read in image and save as array
@@ -120,16 +120,17 @@ def main():
             print("Too Big!")
         else:
             feat_dict = derived_features(feat_dict)
-            
-            feat_dict['class'] = set_train_class(cnt,res_csv,nonres_csv,geotrans) 
+
+            # Get class
+            feat_class = set_train_class(cnt,res_csv,nonres_csv,geotrans) 
             
             if 'prop_df' not in locals():
-                colnames = ['id'] + feat_dict.keys()
+                colnames = ['id','class'] + feat_dict.keys()
                 prop_df = pd.DataFrame(columns = colnames)
                 
                 
-            prop_df.loc[cont_id,colnames] = [cont_id] + feat_dict.values()
-
+            prop_df.loc[cont_id,colnames] = [cont_id,feat_class] + feat_dict.values()
+            
         cont_df.loc[cont_id] = [cont_id] + [cnt.tolist()]
                 
         cont_id+=1
@@ -137,7 +138,7 @@ def main():
         if print_id > 99 :
             print cont_id
             print_id=0
-                    
+
     prop_df.to_csv(prop_outpath,index=False)
     cont_df.to_csv(cont_outpath,index=False)
     
