@@ -2,6 +2,16 @@
 """
 @authors: Kylen Solvik
 Date Create: 3/8/17
+- Builds attribute table for reservoir classification with shape descriptors,
+distance to plains, and NDWI values within contour. 
+- Inputs
+1) im_path: Path to output from grow_shrink.py. Image of opened/closed water objects.
+2) ndwi_path: Path to NDWI file 
+3) training_csv_path:
+- Outputs: 
+1) prop_outpath: Attribute table for machine learning
+2) cont_outpath: csv containing contour IDs and shapes. Needed for plotting 
+classification results
 """
 
 import sys
@@ -11,18 +21,27 @@ import scipy.misc
 import gdal
 import pandas as pd
 import math
-
+import time
+import feature_calcs
+#===============================================================================
 
 # Set some input variables
-im_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/shapeAnalysis/wat_only_morph.tif'
-training_csv_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/training_points/'
-prop_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table.csv'
-cont_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours.csv'
+lead_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/'
+im_path = lead_path + 'build_attribute_table/wat_only_morph.tif'
+ndwi_path = lead_path + 'build_attribute_table/ndwi_10m.tif'
+training_csv_path = lead_path + 'build_attribute_table/training_points/'
+
+# Output paths
+prop_outpath = lead_path + 'build_attribute_table/att_table_wndwi.csv'
+cont_outpath = lead_path + 'build_attribute_table/contours.csv'
+
+# Some parameters for the calculating shape descriptors
+triangle_shape = np.asarray([[[0,0]], [[4,0]], [[2,12]]])
+area_cutoff = 500000
 shapenames = ['obj','approx','hull','rect']
 
-triangle_shape = np.asarray([[[0,0]], [[4,0]], [[2,12]]])
+#===============================================================================
 
-area_cutoff = 500000
 # Function to read in image and save as array
 def read_image(filepath):
     file_handle = gdal.Open(filepath)
@@ -36,7 +55,10 @@ def cont_features(obj):
     epsilon = .05*cv2.arcLength(obj,True)
     
     # Basic shape dictionary
-    shp_dict = {'obj':obj,'approx':cv2.approxPolyDP(obj,epsilon,True),'hull':cv2.convexHull(obj),'rect':cv2.boxPoints(cv2.minAreaRect(obj))}
+    shp_dict = {'obj':obj,
+                'approx':cv2.approxPolyDP(obj,epsilon,True),
+                'hull':cv2.convexHull(obj),
+                'rect':cv2.boxPoints(cv2.minAreaRect(obj))}
 
     # Object moments
     shp_feats = cv2.moments(obj)
@@ -46,7 +68,8 @@ def cont_features(obj):
         return(shp_feats)
     # Match with triangle shape
     for match_meth in range(1,4):
-        shp_feats['tri_match'+str(match_meth)] = cv2.matchShapes(obj,triangle_shape,match_meth,0)
+        shp_feats['tri_match'+str(match_meth)] = (
+            cv2.matchShapes(obj,triangle_shape,match_meth,0))
 
 
         
@@ -62,7 +85,7 @@ def cont_features(obj):
     # Return dictionary
     return(shp_feats)
     
-# Funciton to caclulate derived features
+# Function to caclulate derived features
 def derived_features(fd):
     fd['circ_rsq'] = math.pow(fd['circ_rad'],2)
     fd['eq_diam'] = math.sqrt((4*fd['obj_area'])/math.pi)
@@ -73,7 +96,6 @@ def derived_features(fd):
 def get_pixel_xy(gt,pos):
     x=int((pos[0] - gt[0])/gt[1])
     y=int((pos[1] - gt[3])/gt[5])
-    #print x,y
     return(x,y)
             
 # Function to check if contour contains either a res or nonres point
@@ -93,18 +115,34 @@ def set_train_class(obj,res_p,nonres_p,gt):
             obj_class = 1
             break
     return(obj_class)
-    
+
+# Function to calculate NDWI derived features
+def calc_nd_feats(obj,nd_image):
+    temp_mask = np.zeros(nd_image.shape,np.uint8)
+    cv2.drawContours(temp_mask,[obj],0,(255),-1)
+    t2 = time.time()
+    nd_min,nd_max,foo1,foo2 = cv2.minMaxLoc(nd_image,mask = temp_mask)
+    print 'min only', time.time() -t2
+    t3 = time.time()
+    nd_mean = int(cv2.mean(nd_image,mask = temp_mask)[0])
+    print 'mean only', time.time() -t3
+    return(nd_min,nd_max,nd_mean)
+
+#===============================================================================
 
 def main():
-    # Read image
+    # Read images
     wat_im,geotrans = read_image(im_path)
-
+    ndwi_im, ndwi_geotrans = read_image(ndwi_path)
     # Read in training points csv
-    res_csv = np.genfromtxt(training_csv_path + "all_res.csv",delimiter=",",skip_header=1)
-    nonres_csv = np.genfromtxt(training_csv_path + "all_nonres.csv",delimiter=",",skip_header=1)
+    res_csv = np.genfromtxt(training_csv_path + "all_res.csv",
+                            delimiter=",",skip_header=1)
+    nonres_csv = np.genfromtxt(training_csv_path + "all_nonres.csv",
+                               delimiter=",",skip_header=1)
     
     # Get contours
-    im2, contours, hierarchy = cv2.findContours(wat_im,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    im2, contours, hierarchy = cv2.findContours(wat_im,cv2.RETR_TREE,
+                                                cv2.CHAIN_APPROX_SIMPLE)
     print('Number of Objects:' + str(len(contours)))
     # Create array for storing contours
     cont_df = pd.DataFrame(columns=['id','contour'])
@@ -112,14 +150,19 @@ def main():
     cont_id = 0
     print_id = 0
     for cnt in contours:
+        t1 = time.time()
         feat_dict = cont_features(cnt)
         if feat_dict['obj_area']==0:
             continue
         elif feat_dict['obj_area']>area_cutoff:
-            prop_df.loc[cont_id,['id','obj_area']] = [cont_id] + [feat_dict['obj_area']]
+            prop_df.loc[cont_id,['id','obj_area']] = [cont_id] \
+                                                     + [feat_dict['obj_area']]
             print("Too Big!")
         else:
+            # Calculate extra features
             feat_dict = derived_features(feat_dict)
+            (feat_dict['ndwi_min'],feat_dict['ndwi_max'],
+             feat_dict['ndwi_mean']) = calc_nd_feats(cnt,ndwi_im)
 
             # Get class
             feat_class = set_train_class(cnt,res_csv,nonres_csv,geotrans) 
@@ -127,8 +170,7 @@ def main():
             if 'prop_df' not in locals():
                 colnames = ['id','class'] + feat_dict.keys()
                 prop_df = pd.DataFrame(columns = colnames)
-                
-                
+
             prop_df.loc[cont_id,colnames] = [cont_id,feat_class] + feat_dict.values()
             
         cont_df.loc[cont_id] = [cont_id] + [cnt.tolist()]
@@ -138,7 +180,8 @@ def main():
         if print_id > 99 :
             print cont_id
             print_id=0
-
+        print time.time() - t1
+#        gc.collect()
     prop_df.to_csv(prop_outpath,index=False)
     cont_df.to_csv(cont_outpath,index=False)
     

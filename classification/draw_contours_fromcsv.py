@@ -14,9 +14,9 @@ import ast
 
 # Set some input variables
 im_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/shapeAnalysis/wat_only_morph.tif'
-cont_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours.csv'
-prop_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict.csv'
-im_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/output_contours.tif'
+cont_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours_testset.csv'
+prop_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict_wndwi.csv'
+im_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/output_contours_wndwi.tif'
 
 # Set which column holds the prediction in the prop_df
 predict_column = 'rf_pred'
@@ -52,7 +52,7 @@ def write_image(cont_array,inpath,outpath):
 def main():
     # Read image
     wat_im = read_image(im_path)
-
+    wat_im = np.zeros(wat_im.shape,np.uint8)
     # Read old contours csv
     cont_df = pd.read_csv(cont_path)
 

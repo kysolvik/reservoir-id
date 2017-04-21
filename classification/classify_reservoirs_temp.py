@@ -26,12 +26,17 @@ import numpy as np
 acut_small = 0
 acut_large = 500000
 
+# Set any attributes to exclude for this run
+
 # Load dataset
-filepath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table.csv"
-outpath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict.csv"
+filepath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_wndwi.csv"
+outpath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict_wndwi.csv"
 dataset = pandas.read_csv(filepath,header=0)
 dataset_acut_large = dataset.loc[dataset['obj_area'] < acut_large]
 dataset_acut = dataset_acut_large.loc[dataset_acut_large['obj_area'] > acut_small]
+
+#del dataset_acut['tri_match1']
+#del dataset_acut['tri_match3']
 
 (ds_y,ds_x) = dataset_acut.shape
 print(ds_y,ds_x)
@@ -42,7 +47,8 @@ X = array[:,2:ds_x]
 Y = array[:,1]
 
 # Set infs to the max value for float32s
-X[np.isinf(X)] = np.finfo(np.float32).max
+X[np.isinf(X)] = 2.59248034e+15
+#X[np.isinf(X)] = (np.finfo(np.float32).max)
 
 # If needed, check for and remove nans
 #nan = np.isnan(X).any(axis=1)
@@ -50,26 +56,25 @@ X[np.isinf(X)] = np.finfo(np.float32).max
 #Y = Y[~nan]
 
 # Scale!
-X_scaled = preprocessing.scale(X)
+#X_scaled = X
+X_scaled = preprocessing.robust_scale(X)
+#print np.var(X_scaled,axis=0)
+#print np.var(X_scaled,axis=0)
+#print np.mean(X_scaled,axis=0)
+#print np.min(X_scaled,axis=0)
+#print np.max(X_scaled,axis=0)
+
 
 # Select only classified data
 X_scaled_classified = X_scaled[Y > 0]
 Y_classified = Y[Y > 0]
 
-
+# Separate validation data
 validation_size = 0.2
 seed = 7
 X_train, X_validation, Y_train, Y_validation = model_selection.train_test_split(X_scaled_classified, Y_classified, test_size=validation_size, random_state=seed)
 
-
-
-# Check for NaNs
-#nans = np.isnan(X_scaled)
-#print(nans)
-
-
 # Test options and evaluation metric
-seed = 7
 scoring = 'accuracy'
 
 # Spot Check Algorithms
@@ -106,7 +111,7 @@ for name, model in models:
 
 
 # Define random forest
-rf = RandomForestClassifier(n_estimators=100)
+rf = RandomForestClassifier(n_estimators=200)
 
 # Get learning curve for random forest
 #kfold = model_selection.KFold(n_splits=10, random_state=seed)
@@ -131,6 +136,8 @@ print(classification_report(Y_validation, rf_predictions))
 
 
 # Run on full dataset
+rf = RandomForestClassifier(n_estimators=200)
+rf.fit(X_scaled_classified,Y_classified)
 rf_full_pred = rf.predict(X_scaled)
 dataset_out = dataset_acut
 dataset_out["rf_pred"] = rf_full_pred
