@@ -58,11 +58,11 @@ def main():
     # Read images
     wat_im,geotrans = read_image(im_path)
     ndwi_im, ndwi_geotrans = read_image(ndwi_path)
-    # Read in training points csv
-    res_csv = np.genfromtxt(training_csv_path + "all_res.csv",
-                            delimiter=",",skip_header=1)
-    nonres_csv = np.genfromtxt(training_csv_path + "all_nonres.csv",
-                               delimiter=",",skip_header=1)
+    ## Read in training points csv
+    #res_csv = np.genfromtxt(training_csv_path + "all_res.csv",
+    #                        delimiter=",",skip_header=1)
+    #nonres_csv = np.genfromtxt(training_csv_path + "all_nonres.csv",
+    #                           delimiter=",",skip_header=1)
     
     # Get contours
     im2, contours, hierarchy = cv2.findContours(wat_im,cv2.RETR_TREE,
@@ -76,7 +76,7 @@ def main():
     for cnt in contours:
 
         # Get class
-        feat_class = set_train_class(cnt,res_csv,nonres_csv,geotrans)
+        feat_class = 0 #set_train_class(cnt,res_csv,nonres_csv,geotrans)
         if (full_run or feat_class!=0):
             feat_dict = cont_features(cnt,bounding_geos,area_cutoff,triangle_shape)
             if feat_dict['obj_area']==0:

@@ -27,12 +27,12 @@ import gc
 #===============================================================================
 
 # Test mode on means that it won't run for non-test set objects
-full_run = False
+full_run = True
 
 # Set some input variables
 lead_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/'
 im_path = lead_path + 'intermediate/water_morph.tif'
-ndwi_path = lead_path + 'inputs/ndwi_10m.tif'
+ndwi_path = lead_path + 'inputs/ndwi_10m_goias.tif'
 training_csv_path = lead_path + 'build_attribute_table/training_points/'
 
 # Output paths
@@ -57,26 +57,26 @@ def read_image(filepath):
 def main():
     # Read images
     wat_im,geotrans = read_image(im_path)
-    ndwi_im, ndwi_geotrans = read_image(ndwi_path)
-    # Read in training points csv
-    res_csv = np.genfromtxt(training_csv_path + "all_res.csv",
-                            delimiter=",",skip_header=1)
-    nonres_csv = np.genfromtxt(training_csv_path + "all_nonres.csv",
-                               delimiter=",",skip_header=1)
+    #ndwi_im, ndwi_geotrans = read_image(ndwi_path)
+    ## Read in training points csv
+    #res_csv = np.genfromtxt(training_csv_path + "all_res.csv",
+    #                        delimiter=",",skip_header=1)
+    #nonres_csv = np.genfromtxt(training_csv_path + "all_nonres.csv",
+    #                           delimiter=",",skip_header=1)
     
     # Get contours
     im2, contours, hierarchy = cv2.findContours(wat_im,cv2.RETR_TREE,
                                                 cv2.CHAIN_APPROX_SIMPLE)
     print('Number of Objects:' + str(len(contours)))
     # Create array for storing contours
-    cont_df = pd.DataFrame(colUmns=['id','contour'])
+    cont_df = pd.DataFrame(columns=['id','contour'])
     cont_df['contour'].astype(object)
     cont_id = 0
     print_id = 0
     for cnt in contours:
 
         # Get class
-        feat_class = set_train_class(cnt,res_csv,nonres_csv,geotrans)
+        feat_class = 0 #set_train_class(cnt,res_csv,nonres_csv,geotrans)
         if (full_run or feat_class!=0):
             feat_dict = cont_features(cnt,bounding_geos,area_cutoff,triangle_shape)
             if feat_dict['obj_area']==0:
@@ -88,8 +88,8 @@ def main():
             else:
                 # Calculate extra features
                 feat_dict = derived_features(feat_dict)
-                (feat_dict['ndwi_min'],feat_dict['ndwi_max'],
-                 feat_dict['ndwi_mean']) = calc_nd_feats(cnt,ndwi_im)
+#                (feat_dict['ndwi_min'],feat_dict['ndwi_max'],
+#                 feat_dict['ndwi_mean']) = calc_nd_feats(cnt,ndwi_im)
                 
                 if 'prop_df' not in locals():
                     colnames = ['id','class'] + feat_dict.keys()

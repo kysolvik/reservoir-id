@@ -12,9 +12,9 @@ import gdal
 
 
 # Set some input variables
-land_cover_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/inputs/goias_class.tif'
+land_cover_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/shapeAnalysis/classWater1Try4.tif'
 water_class = 1
-out_tif ='/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/intermediate/goias_water_morph.tif'
+out_tif ='/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/wat_nomorph.tif'
 
 # Function to read in image and save as array
 def read_image(lc_path):
@@ -22,20 +22,11 @@ def read_image(lc_path):
     lc_img = file_handle.GetRasterBand(1).ReadAsArray()
     return(lc_img)
 
-def grow_shrink(lc_array):
-    # Recode non-water to 0
-    lc_watonly = np.where(lc_array == water_class, 1, 0)
-    # Execute shrink/grow
-    #se = cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5))
-    se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
-    # Grow
-    lc_watonly = cv2.dilate(np.uint8(lc_watonly), se, iterations=4)
-    #Shrink
-    lc_watonly = cv2.erode(np.uint8(lc_watonly), se, iterations = 4)
+def select_wat(lc_array,wclass):
+    lc_watonly = np.where(lc_array==wclass,1,0)
     return(np.uint8(lc_watonly))
 
 def write_image(lc_array,in_path):
-
     # Input
     source_ds = gdal.Open(in_path)
     source_band = source_ds.GetRasterBand(1)
@@ -61,7 +52,7 @@ def main():
     lc = read_image(land_cover_path)
     print(lc)
     # Grow/shrink
-    lc = grow_shrink(lc)
+    lc = select_wat(lc,water_class)
     print(lc.shape)
     print(lc.dtype)
     print(lc.nbytes)

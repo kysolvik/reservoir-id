@@ -29,8 +29,8 @@ acut_large = 500000
 # Set any attributes to exclude for this run
 
 # Load dataset
-filepath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_wndwi.csv"
-outpath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict_wndwi.csv"
+filepath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_nomorph.csv"
+outpath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict_nomorph.csv"
 dataset = pandas.read_csv(filepath,header=0)
 dataset_acut_large = dataset.loc[dataset['obj_area'] < acut_large]
 dataset_acut = dataset_acut_large.loc[dataset_acut_large['obj_area'] > acut_small]
@@ -136,8 +136,8 @@ print(classification_report(Y_validation, rf_predictions))
 
 
 # Run on full dataset
-rf = RandomForestClassifier(n_estimators=200)
-rf.fit(X_scaled_classified,Y_classified)
+#rf = RandomForestClassifier(n_estimators=200)
+#rf.fit(X_scaled_classified,Y_classified)
 rf_full_pred = rf.predict(X_scaled)
 dataset_out = dataset_acut
 dataset_out["rf_pred"] = rf_full_pred
