@@ -12,11 +12,11 @@ import gdal
 import pandas as pd
 import ast
 
-# Set some input variables
-im_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/intermediate/water_morph.tif'
-cont_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/tables/contours.csv'
-prop_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/tables/att_table_predict.csv'
-im_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/outputs/ouput_contours.tif'
+# Arguments
+wat_tif_path = sys.argv[1]
+contour_csv_path = sys.argv[2]
+prop_csv_path = sys.argv[3]
+image_tif_outpath = sys.argv[4]
 
 # Set which column holds the prediction in the prop_df
 predict_column = 'rf_pred'
@@ -51,13 +51,13 @@ def write_image(cont_array,inpath,outpath):
 
 def main():
     # Read image
-    wat_im = read_image(im_path)
+    wat_im = read_image(wat_tif_path)
     wat_im = np.zeros(wat_im.shape,np.uint8)
     # Read old contours csv
-    cont_df = pd.read_csv(cont_path)
+    cont_df = pd.read_csv(contour_csv_path)
 
     # Read props df for prediction
-    prop_df = pd.read_csv(prop_path)
+    prop_df = pd.read_csv(prop_csv_path)
 
     # Join cont_df and prop_df    
     cont_df = pd.merge(cont_df,prop_df,on='id',how='left')
@@ -84,7 +84,7 @@ def main():
     cv2.drawContours(wat_im,csv_cont_res,-1,(2,0,0),-1)
 
     # Write out
-    write_image(wat_im,im_path,im_outpath)
+    write_image(wat_im,wat_tif_path,image_tif_outpath)
 
     print("done!")
 if __name__ == '__main__':

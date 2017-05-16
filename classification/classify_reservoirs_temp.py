@@ -22,21 +22,23 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
-# Set area cutoff
-acut_small = 0
-acut_large = 500000
+# Arguments
+in_csv_path = sys.argv[1]
+out_csv_path = sys.argv[2]
+acut_small = sys.argv[3] # Won't attempt to predict below this. Recommend 0
+acut_large = sys.argv[4] # Won't attempt to predict above this. Recommend 500000
 
 # Set any attributes to exclude for this run
+exclude_atts = []
 
 # Load dataset
-filepath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_nomorph.csv"
-outpath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict_nomorph.csv"
-dataset = pandas.read_csv(filepath,header=0)
+dataset = pandas.read_csv(in_csv_path,header=0)
 dataset_acut_large = dataset.loc[dataset['obj_area'] < acut_large]
 dataset_acut = dataset_acut_large.loc[dataset_acut_large['obj_area'] > acut_small]
 
-#del dataset_acut['tri_match1']
-#del dataset_acut['tri_match3']
+
+for att in exclude_atts:
+    del dataset_acut[att]
 
 (ds_y,ds_x) = dataset_acut.shape
 print(ds_y,ds_x)
@@ -46,9 +48,8 @@ array = dataset_acut.values
 X = array[:,2:ds_x]
 Y = array[:,1]
 
-# Set infs to the max value for float32s
+# Set inf to the max value for float32s
 X[np.isinf(X)] = 2.59248034e+15
-#X[np.isinf(X)] = (np.finfo(np.float32).max)
 
 # If needed, check for and remove nans
 #nan = np.isnan(X).any(axis=1)
@@ -56,14 +57,7 @@ X[np.isinf(X)] = 2.59248034e+15
 #Y = Y[~nan]
 
 # Scale!
-#X_scaled = X
 X_scaled = preprocessing.robust_scale(X)
-#print np.var(X_scaled,axis=0)
-#print np.var(X_scaled,axis=0)
-#print np.mean(X_scaled,axis=0)
-#print np.min(X_scaled,axis=0)
-#print np.max(X_scaled,axis=0)
-
 
 # Select only classified data
 X_scaled_classified = X_scaled[Y > 0]
@@ -86,17 +80,13 @@ models.append(('LDA', LinearDiscriminantAnalysis()))
 models.append(('KNN', KNeighborsClassifier()))
 models.append(('CART', DecisionTreeClassifier()))
 models.append(('NB', GaussianNB()))
-#models.append(('SVM5',SVC(C=5)))
 models.append(('SVM10', SVC(C=10)))
 models.append(('SVM1',SVC(C=1)))
 models.append(('SVM.1',SVC(C=.1)))
-#models.append(('SVM.01',SVC(C=.01)))
 models.append(('RF10',RandomForestClassifier(n_estimators=10)))
-#models.append(('RF50',RandomForestClassifier(n_estimators=50)))
+models.append(('RF64',RandomForestClassifier(n_estimators=64)))
 models.append(('RF100',RandomForestClassifier(n_estimators=100)))
-#models.append(('RF200',RandomForestClassifier(n_estimators=200)))
-models.append(('RF300',RandomForestClassifier(n_estimators=300)))
-#models.append(('RF400',RandomForestClassifier(n_estimators=400)))
+models.append(('RF200',RandomForestClassifier(n_estimators=200)))
               
 # evaluate each model in turn
 results = []
@@ -111,7 +101,7 @@ for name, model in models:
 
 
 # Define random forest
-rf = RandomForestClassifier(n_estimators=200)
+rf = RandomForestClassifier(n_estimators=100)
 
 # Get learning curve for random forest
 #kfold = model_selection.KFold(n_splits=10, random_state=seed)
@@ -141,5 +131,5 @@ print(classification_report(Y_validation, rf_predictions))
 rf_full_pred = rf.predict(X_scaled)
 dataset_out = dataset_acut
 dataset_out["rf_pred"] = rf_full_pred
-dataset_out.to_csv(outpath,index=False)
+dataset_out.to_csv(out_csv_path,index=False)
 
