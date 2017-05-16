@@ -13,10 +13,10 @@ import pandas as pd
 import ast
 
 # Set some input variables
-im_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/shapeAnalysis/wat_only_morph.tif'
-cont_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/contours_nomorph.csv'
-prop_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict_nomorph.csv'
-im_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/output_contours_nomorph.tif'
+im_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/intermediate/water_morph.tif'
+cont_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/tables/contours.csv'
+prop_path = '/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/tables/att_table_predict.csv'
+im_outpath = '/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/outputs/ouput_contours.tif'
 
 # Set which column holds the prediction in the prop_df
 predict_column = 'rf_pred'
