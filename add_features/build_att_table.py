@@ -7,7 +7,7 @@ and NDWI values within contour
 - Arguments:
 1) wat_tif_path: Path to output from grow_shrink.py. Image of opened/closed water objects.
 2) ndwi_tif_path: Path to NDWI file 
-3) training_csv_path:
+3) training_csv_dir:
 4) prop_csv_outpath: Attribute table for machine learning
 5) cont_csv_outpath: csv containing contour IDs and shapes. Needed for plotting 
 classification results
@@ -34,7 +34,7 @@ test_mode = True
 # Get arguments
 wat_tif_path = sys.argv[1]
 ndwi_tif_path = sys.argv[2]
-training_csv_path = sys.argv[3]
+training_csv_dir = sys.argv[3]
 prop_csv_outpath = sys.argv[4]
 cont_csv_outpath = sys.argv[5]
 
@@ -52,9 +52,9 @@ def main():
     ndwi_im, ndwi_geotrans = read_image(ndwi_tif_path)
 
     # Read in training points csv
-    res_csv = np.genfromtxt(training_csv_path + "all_res.csv",
+    res_csv = np.genfromtxt(training_csv_dir + "all_res.csv",
                             delimiter=",",skip_header=1)
-    nonres_csv = np.genfromtxt(training_csv_path + "all_nonres.csv",
+    nonres_csv = np.genfromtxt(training_csv_dir + "all_nonres.csv",
                                delimiter=",",skip_header=1)
     
     # Get contours
@@ -64,7 +64,7 @@ def main():
     print('Number of Objects:' + str(len(contours)))
 
     # Create array for storing contours
-    cont_df = pd.DataFrame(colUmns=['id','contour'])
+    cont_df = pd.DataFrame(columns=['id','contour'])
     cont_df['contour'].astype(object)
 
     cont_id = 0
