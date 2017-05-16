@@ -14,6 +14,12 @@ import math
 
 #===============================================================================
 
+# Read in tif as array
+def read_image(filepath):
+    file_handle = gdal.Open(filepath)
+    gt = file_handle.GetGeoTransform()
+    return(file_handle.GetRasterBand(1).ReadAsArray(),gt)
+
 # Function to calculate contour features
 def cont_features(obj,shapenames,acut,match_shape):
     # Needed for getting approximate poly
