@@ -22,16 +22,23 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
-# Set area cutoff
-acut_small = 0
-acut_large = 500000
+# Arguments
+in_csv_path = sys.argv[1]
+out_csv_path = sys.argv[2]
+acut_small = sys.argv[3] # Won't attempt to predict below this. Recommend 0
+acut_large = sys.argv[4] # Won't attempt to predict above this. Recommend 500000
+
+# Set any attributes to exclude for this run
+exclude_atts = []
 
 # Load dataset
-filepath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table.csv"
-outpath = "/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/att_table_predict.csv"
-dataset = pandas.read_csv(filepath,header=0)
+dataset = pandas.read_csv(in_csv_path,header=0)
 dataset_acut_large = dataset.loc[dataset['obj_area'] < acut_large]
 dataset_acut = dataset_acut_large.loc[dataset_acut_large['obj_area'] > acut_small]
+
+
+for att in exclude_atts:
+    del dataset_acut[att]
 
 (ds_y,ds_x) = dataset_acut.shape
 print(ds_y,ds_x)
@@ -41,8 +48,8 @@ array = dataset_acut.values
 X = array[:,2:ds_x]
 Y = array[:,1]
 
-# Set infs to the max value for float32s
-X[np.isinf(X)] = np.finfo(np.float32).max
+# Set inf to the max value for float32s
+X[np.isinf(X)] = 2.59248034e+15
 
 # If needed, check for and remove nans
 #nan = np.isnan(X).any(axis=1)
@@ -50,26 +57,18 @@ X[np.isinf(X)] = np.finfo(np.float32).max
 #Y = Y[~nan]
 
 # Scale!
-X_scaled = preprocessing.scale(X)
+X_scaled = preprocessing.robust_scale(X)
 
 # Select only classified data
 X_scaled_classified = X_scaled[Y > 0]
 Y_classified = Y[Y > 0]
 
-
+# Separate validation data
 validation_size = 0.2
 seed = 7
 X_train, X_validation, Y_train, Y_validation = model_selection.train_test_split(X_scaled_classified, Y_classified, test_size=validation_size, random_state=seed)
 
-
-
-# Check for NaNs
-#nans = np.isnan(X_scaled)
-#print(nans)
-
-
 # Test options and evaluation metric
-seed = 7
 scoring = 'accuracy'
 
 # Spot Check Algorithms
@@ -81,17 +80,13 @@ models.append(('LDA', LinearDiscriminantAnalysis()))
 models.append(('KNN', KNeighborsClassifier()))
 models.append(('CART', DecisionTreeClassifier()))
 models.append(('NB', GaussianNB()))
-#models.append(('SVM5',SVC(C=5)))
 models.append(('SVM10', SVC(C=10)))
 models.append(('SVM1',SVC(C=1)))
 models.append(('SVM.1',SVC(C=.1)))
-#models.append(('SVM.01',SVC(C=.01)))
 models.append(('RF10',RandomForestClassifier(n_estimators=10)))
-#models.append(('RF50',RandomForestClassifier(n_estimators=50)))
+models.append(('RF64',RandomForestClassifier(n_estimators=64)))
 models.append(('RF100',RandomForestClassifier(n_estimators=100)))
-#models.append(('RF200',RandomForestClassifier(n_estimators=200)))
-models.append(('RF300',RandomForestClassifier(n_estimators=300)))
-#models.append(('RF400',RandomForestClassifier(n_estimators=400)))
+models.append(('RF200',RandomForestClassifier(n_estimators=200)))
               
 # evaluate each model in turn
 results = []
@@ -131,8 +126,10 @@ print(classification_report(Y_validation, rf_predictions))
 
 
 # Run on full dataset
+#rf = RandomForestClassifier(n_estimators=200)
+#rf.fit(X_scaled_classified,Y_classified)
 rf_full_pred = rf.predict(X_scaled)
 dataset_out = dataset_acut
 dataset_out["rf_pred"] = rf_full_pred
-dataset_out.to_csv(outpath,index=False)
+dataset_out.to_csv(out_csv_path,index=False)
 
