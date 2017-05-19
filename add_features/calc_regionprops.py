@@ -36,7 +36,7 @@ def get_feat_dict(i,plist,tile_id,plist_get):
     return(fdict)
 
 # Main function to calculate all the features
-def calc_shape_features(wat_im_path,intensity_im_path,plist_get):
+def calc_shape_features(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
 
     # Read Images
     wat_im,geotrans = read_image(wat_im_path)
@@ -51,7 +51,7 @@ def calc_shape_features(wat_im_path,intensity_im_path,plist_get):
     plist = regionprops(wat_labeled, intensity_image = intensity_im)
 
     # Save water labeled tiff
-    write_image(wat_labeled,wat_im_path,foopath,gdal.GDT_UInt16)
+    write_image(wat_labeled,wat_im_path,labeled_out_path,gdal.GDT_UInt16)
     
     # Construct feature df
     for i in range(0,len(plist)):
@@ -59,10 +59,9 @@ def calc_shape_features(wat_im_path,intensity_im_path,plist_get):
         feature_dict = get_feat_dict(i,plist,tile_id,plist_get)
 
         if 'feature_df' not in locals():
-            colnames =  ['id'] + feature_dict.keys()
+            colnames =  ['id','class'] + feature_dict.keys()
             feature_df = pd.DataFrame(columns = colnames)
         
-        feature_df.loc[i,colnames] = [tile_id + "-" + str(i)] + feature_dict.values()
-    prop_csv_outpath="/Users/ksolvik/Documents/foo.csv"
+        feature_df.loc[i,colnames] = [tile_id + "-" + str(i),0] + feature_dict.values()
 
     return(feature_df)

@@ -22,7 +22,7 @@ def get_train_indices(coords,geotrans):
 
 # Inputs: paths to csvs of positive and negative training points, a labeled image
 # Output: array of region IDs that are positive and negative
-def find_train_regions(pos_csv_path,neg_csv_path,labeled_image_path):
+def find_training_ids(pos_csv_path,neg_csv_path,labeled_image_path):
     labeled_image,geotrans = read_image(labeled_image_path)
 
     ysize,xsize = labeled_image.shape
