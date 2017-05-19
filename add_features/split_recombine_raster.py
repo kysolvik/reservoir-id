@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import sys
+0;95;0cimport sys
 import os
 import gdal
 
@@ -35,8 +35,9 @@ def split_raster(in_tif,out_dir,out_prefix,tile_size_x,tile_size_y,
 
 def recombine_raster(in_dir,in_prefix,out_tif):
         # Run command
-        com_string = "gdalwarp -r near " + in_dir + "/" + in_prefix + "*.tif" \
+        com_string = "gdalwarp -r near -wm 3000 -overwrite " + in_dir + "/" + in_prefix + "* " \
                      + out_tif
+        print(com_string)
         os.system(com_string)
         
         return("Done with combine")
