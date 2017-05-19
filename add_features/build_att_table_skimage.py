@@ -101,16 +101,20 @@ def main():
 
             # Identify training examples in dataframe
             feature_dataframe.loc[feature_dataframe['id'].
-                                  isin([tile + "-" + str(i) for i in pos_ids]),'class'] = 2
+                                  isin([tile + "-" + str(i) for i in pos_ids]),
+                                  'class'] = 2
             feature_dataframe.loc[feature_dataframe['id'].
-                                  isin([tile + "-" + str(i) for i in neg_ids]),'class'] = 1
+                                  isin([tile + "-" + str(i) for i in neg_ids]),
+                                  'class'] = 1
         
             # Append to csv
             if create_csv:
-                feature_dataframe.to_csv(prop_csv_outpath, mode='w', header=True)
+                feature_dataframe.to_csv(prop_csv_outpath, mode='w',
+                                         header=True, index=False)
                 create_csv = False
             else: 
-                feature_dataframe.to_csv(prop_csv_outpath, mode='a', header=False)
+                feature_dataframe.to_csv(prop_csv_outpath, mode='a',
+                                         header=False, index=False)
         
     return()
 
