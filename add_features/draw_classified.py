@@ -43,7 +43,7 @@ def draw_classified(classified_csv,tile_dir,output_tif):
             os.makedirs(tile_dir+"/classified")
 
         write_image(wat_im,wat_im_path,tile_dir + \
-                    "/classified/classified_" + tile,gdal.GDT_UInt16)
+                    "/classified/classified_" + tile,gdal.GDT_Byte)
 
     # Combine them back together
     recombine_raster(tile_dir + "/classified","classified_",output_tif)
