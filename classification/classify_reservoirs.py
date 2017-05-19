@@ -26,8 +26,8 @@ import sys
 # Arguments
 in_csv_path = sys.argv[1]
 out_csv_path = sys.argv[2]
-acut_small = sys.argv[3] # Won't attempt to predict below this. Recommend 1 or 2
-acut_large = sys.argv[4] # Won't attempt to predict above this. Recommend 500000
+acut_small = int(sys.argv[3]) # Won't attempt to predict below this. Recommend 1 or 2
+acut_large = int(sys.argv[4]) # Won't attempt to predict above this. Recommend 500000
 
 # Testing
 #in_csv_path = "/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/skimage_try2/testprop.csv"
@@ -36,7 +36,7 @@ acut_large = sys.argv[4] # Won't attempt to predict above this. Recommend 500000
 #acut_large=500000
 
 # Set any attributes to exclude for this run
-exclude_atts = ['major_axis_length','orientation']
+exclude_atts = []
 
 # Load dataset
 dataset = pd.read_csv(in_csv_path,header=0)
