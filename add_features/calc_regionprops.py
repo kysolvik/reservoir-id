@@ -63,6 +63,6 @@ def calc_shape_features(wat_im_path,intensity_im_path,labeled_out_path,plist_get
         if i == 0:
             feature_df = pd.DataFrame(columns = colnames)
         
-        feature_df.loc[i,colnames] = [tile_id + "-" + str(i),0] + feature_dict.values()
+        feature_df.loc[i,colnames] = [tile_id + "-" + str(i+1),0] + feature_dict.values()
 
     return(feature_df)
