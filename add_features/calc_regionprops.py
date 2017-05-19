@@ -44,12 +44,12 @@ def calc_shape_features(wat_im_path,intensity_im_path,labeled_out_path,plist_get
 
     # Get the ID of the current tile
     tile_id = '_'.join(path.splitext(path.basename(wat_im_path))[0].split("_")[-2:])
-    
+
     # Calculate regionprops
     wat_clear = clear_border(wat_im)
     wat_labeled = label(wat_clear)
     plist = regionprops(wat_labeled, intensity_image = intensity_im)
-
+    
     # Save water labeled tiff
     write_image(wat_labeled,wat_im_path,labeled_out_path,gdal.GDT_UInt16)
     
@@ -58,8 +58,9 @@ def calc_shape_features(wat_im_path,intensity_im_path,labeled_out_path,plist_get
         
         feature_dict = get_feat_dict(i,plist,tile_id,plist_get)
 
-        if 'feature_df' not in locals():
-            colnames =  ['id','class'] + feature_dict.keys()
+        colnames = ['id','class'] + feature_dict.keys()
+
+        if i == 0:
             feature_df = pd.DataFrame(columns = colnames)
         
         feature_df.loc[i,colnames] = [tile_id + "-" + str(i),0] + feature_dict.values()
