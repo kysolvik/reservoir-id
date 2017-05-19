@@ -24,23 +24,25 @@ def draw_classified(classified_csv,tile_dir,output_tif):
         pos_regions = reg_nums[(tile_ids_all == tile) & (predictions == 2)]
         neg_regions = reg_nums[(tile_ids_all == tile) & (predictions == 1)]
 
-        pos_temp_val = 65535
-        neg_temp_val = 65534
+        pos_temp_val = 3
+        neg_temp_val = 2
 
+        wat_im_path = tile_dir + "/" + "water/water_" + tile + ".tif"
+        wat_im, foo = read_image(wat_im_path)
         labeled_im_path = tile_dir + "/" + "labeled/labeled_" + tile + ".tif"
         labeled_im, foo = read_image(labeled_im_path)
 
         for i in pos_regions:
-            labeled_im[labeled_im == i] = pos_temp_val
+            wat_im[labeled_im == i] = pos_temp_val
 
         for i in neg_regions:
-            labeled_im[labeled_im == i] = neg_temp_val
+            wat_im[labeled_im == i] = neg_temp_val
 
         # Write out result
         if not os.path.exists(tile_dir+"/classified"):
             os.makedirs(tile_dir+"/classified")
 
-        write_image(labeled_im,labeled_im_path,tile_dir + \
+        write_image(wat_im,wat_im_path,tile_dir + \
                     "/classified/classified_" + tile,gdal.GDT_UInt16)
 
     # Combine them back together
