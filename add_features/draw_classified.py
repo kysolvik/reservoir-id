@@ -46,4 +46,4 @@ def draw_classified(classified_csv,tile_dir,output_tif):
                     "/classified/classified_" + tile,gdal.GDT_Byte)
 
     # Combine them back together
-    recombine_raster(tile_dir + "/classified","classified_",output_tif)
+    # recombine_raster(tile_dir + "/classified","classified_",output_tif)
