@@ -12,7 +12,7 @@ import pandas as pd
 from read_write import *
 from split_recombine_raster import *
 
-def draw_classified(classified_csv,tile_dir,output_tif):
+def draw_classified(classified_csv,tile_dir):
 
     # Get CSV
     class_df = pd.read_csv(classified_csv,header=0)
@@ -47,3 +47,4 @@ def draw_classified(classified_csv,tile_dir,output_tif):
 
     # Combine them back together
     # recombine_raster(tile_dir + "/classified","classified_",output_tif)
+
