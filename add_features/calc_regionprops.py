@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage.measure import label, regionprops
 from skimage.segmentation import clear_border
+from skimage.transform import resize
 import gdal
 from os import path
 import pandas as pd
@@ -50,8 +51,19 @@ def calc_intensity_feats(int_im,bbox,region):
     return([outside_mean_int,outside_max_int,outside_min_int,outside_sd_int,
             inside_sd_int])
     
+# Add intensity
+def get_pixel_feats(int_im,bbox):
+    # Grow bounding box by 25% in each direction
+    y_grow = int(round((bbox[2]-bbox[0])*.25))
+    x_grow = int(round((bbox[3]-bbox[1])*.25))
+    y_max,x_max = int_im.shape
+    new_bbox = (max(bbox[0] - y_grow,1),max(bbox[1] - x_grow,1),
+            min(bbox[2] + y_grow,y_max),min(bbox[3] + x_grow,x_max))
+    # Rescale
+    int_expanded_bbox = int_im[new_bbox[0]:new_bbox[2],new_bbox[1]:new_bbox[3]]
+    resized_im = resize(int_expanded_bbox,(50,50),mode ='symmetric')
+    return(np.ndarray.flatten(resized_im))
     
-
 # Main function to calculate all the features
 def calc_shape_features(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
 
@@ -78,13 +90,15 @@ def calc_shape_features(wat_im_path,intensity_im_path,labeled_out_path,plist_get
         # Add extra features
         extra_int_feats = calc_intensity_feats(intensity_im,plist[i].bbox,
                                                plist[i].image)
-        
         feature_dict.update({'out_mean_int':extra_int_feats[0],
                              'out_max_int':extra_int_feats[1],
                              'out_min_int':extra_int_feats[2],
                              'out_sd_int':extra_int_feats[3],
                              'in_sd_int':extra_int_feats[4]})
-        
+        # Pixel features from intensity bbox rescaled to 50,50
+        pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
+        feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
+
         colnames = ['id','class'] + feature_dict.keys()
 
         if i == 0:
