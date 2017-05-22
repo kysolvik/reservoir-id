@@ -33,13 +33,19 @@ def get_feat_dict(i,plist,tile_id,plist_get):
 
 # Find some extra intensity features based on OUTSIDE the region
 def calc_intensity_feats(int_im,bbox,region):
-    int_bbox = intensity_im[bbox[0]:bbox[2],bbox[1]:bbox[3]]
+    int_bbox = int_im[bbox[0]:bbox[2],bbox[1]:bbox[3]]
     outsidereg = np.invert(region)
-    intensity_vals = int_bbox[outsidereg]
-    outside_mean_int = np.mean(intensity_vals)
-    outside_max_int = np.max(intensity_vals)
-    outside_min_int = np.min(intensity_vals)
-    outside_sd_int = np.std(intensity_vals)
+    if(np.any(outsidereg)):
+        intensity_vals = int_bbox[outsidereg]
+        outside_mean_int = np.mean(intensity_vals)
+        outside_max_int = np.max(intensity_vals)
+        outside_min_int = np.min(intensity_vals)
+        outside_sd_int = np.std(intensity_vals)
+    else:
+        outside_mean_int = np.nan
+        outside_max_int = np.nan
+        outside_min_int = np.nan
+        outside_sd_int = np.nan
     inside_sd_int = np.std(int_bbox[region])
     return([outside_mean_int,outside_max_int,outside_min_int,outside_sd_int,
             inside_sd_int])
