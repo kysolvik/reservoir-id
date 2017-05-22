@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-0;95;0cimport sys
+import sys
 import os
 import gdal
 
