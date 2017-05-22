@@ -59,6 +59,9 @@ array = dataset_acut.values
 X = array[:,2:ds_x].astype(float)
 Y = array[:,1].astype(int)
 
+# Set nans to 0
+X = np.nan_to_num(X)
+
 # Scale!
 X_scaled = preprocessing.robust_scale(X)
 X_scaled_classified = X_scaled[Y > 0]
