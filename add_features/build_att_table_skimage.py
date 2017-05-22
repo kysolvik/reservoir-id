@@ -55,6 +55,9 @@ prop_list_get = ['area','convex_area','eccentricity',
                  'weighted_moments_normalized','weighted_moments_hu']
 #===============================================================================
 
+def tile_feature_calc(
+
+
 def main():
 
     
@@ -78,7 +81,7 @@ def main():
     # Create output dirs
     if not os.path.exists(tile_dir+"/labeled"):
         os.makedirs(tile_dir+"/labeled")
-
+        
     create_csv = True
     
     # Calculate features for each tile
