@@ -7,6 +7,7 @@ Python library for identifying man-made water reservoirs from satellite land cov
 * OpenCV-Python
 * GDAL
 * scikit-learn
+* scikit-image
 
 # Usage
 ### Required Inputs
