@@ -27,20 +27,18 @@ import time
 import gc
 import os
 
-from . import calc_feats
-from . import find_training
-from ..io import split_recombine
+from res_modules.add_features import calc_feats, find_training
+from res_modules.res_io import read_write, split_recombine
 
 #===============================================================================
-split = False
-
 # Get command line arguments
 wat_tif = sys.argv[1]
 intensity_tif = sys.argv[2]
 tile_dir = sys.argv[3]
-pos_training_csv = sys.argv[4]
-neg_training_csv = sys.argv[5]
-prop_csv_outpath = sys.argv[6]
+split = (sys.argv[4] == "True")
+pos_training_csv = sys.argv[5]
+neg_training_csv = sys.argv[6]
+prop_csv_outpath = sys.argv[7]
 
 tile_size_x = 4000
 tile_size_y = 4000
@@ -91,7 +89,7 @@ def main():
         labeled_out_path = tile_dir+"/labeled/labeled_"+tile+".tif"
 
         # Check if there are any water objects before calculating features
-        wat_im,foo = read_image(wat_im_path)
+        wat_im,foo = read_write.read_image(wat_im_path)
         if (wat_im.max()>0):
             feature_dataframe = calc_feats.shape_feats(wat_im_path,intensity_im_path,
                                                 labeled_out_path,prop_list_get)

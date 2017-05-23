@@ -18,7 +18,7 @@ import numpy as np
 import scipy.misc
 import gdal
 
-from ..io import read_write
+from res_modules.res_io import read_write
 
 # Parse command line args
 land_cover_path = sys.argv[1]
@@ -33,9 +33,9 @@ def grow_shrink(lc_array):
     #se = cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5))
     se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
     # Grow
-    lc_watonly = cv2.dilate(np.uint8(lc_watonly), se, iterations=4)
+    lc_watonly = cv2.dilate(np.uint8(lc_watonly), se, iterations=5)
     #Shrink
-    lc_watonly = cv2.erode(np.uint8(lc_watonly), se, iterations = 4)
+    lc_watonly = cv2.erode(np.uint8(lc_watonly), se, iterations = 5)
     return(np.uint8(lc_watonly))
 
 def main():
