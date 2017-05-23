@@ -9,8 +9,7 @@ import gdal
 from os import path
 import pandas as pd
 
-import .read_write 
-import .split_recombine
+from res_modules.res_io import read_write, split_recombine
 
 classified_csv_path = sys.argv[1]
 tile_dir_path = sys.argv[2]

@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ..io import read_write
+from ..res_io import read_write
 
 # Given the points, find the indices in the image array
 def get_train_indices(coords,geotrans):

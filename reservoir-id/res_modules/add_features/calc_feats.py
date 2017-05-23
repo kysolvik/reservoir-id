@@ -8,7 +8,7 @@ from os import path
 import gdal
 import pandas as pd
 
-from ..io import read_write
+from ..res_io import read_write
 
 # Fill out feature dict 
 def get_feat_dict(i,plist,tile_id,plist_get):
