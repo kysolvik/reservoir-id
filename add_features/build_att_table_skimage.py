@@ -3,11 +3,11 @@
 @authors: Kylen Solvik
 Date Create: 3/8/17
 - Builds attribute table for reservoir classification with shape descriptors
-and NDWI values within contour
+and INTENSITY values within contour
 - Arguments:
 1) wat_tif_path: Path to output from grow_shrink.py. \
    Image of opened/closed water objects.
-2) ndwi_tif_path: Path to NDWI file 
+2) intensity_tif_path: Path to INTENSITY file 
 3) training_csv_dir:
 4) prop_csv_outpath: Attribute table for machine learning
 5) cont_csv_outpath: csv containing contour IDs and shapes. Needed for plotting 
@@ -30,13 +30,11 @@ from split_recombine_raster import *
 from find_training_regs import *
 
 #===============================================================================
-# Test mode true means that it will only run for training set.
-test_mode = True
 split = False
 
 # Get command line arguments
 wat_tif = sys.argv[1]
-ndwi_tif = sys.argv[2]
+intensity_tif = sys.argv[2]
 tile_dir = sys.argv[3]
 pos_training_csv = sys.argv[4]
 neg_training_csv = sys.argv[5]
@@ -55,6 +53,7 @@ prop_list_get = ['area','convex_area','eccentricity',
                  'weighted_moments_normalized','weighted_moments_hu']
 #===============================================================================
 
+
 def main():
 
     
@@ -62,7 +61,7 @@ def main():
     if split:
         split_raster(wat_tif,tile_dir+"/water","water_",tile_size_x,tile_size_y,
                      overlap_size)
-        split_raster(ndwi_tif,tile_dir+"/ndwi","ndwi_",tile_size_x,tile_size_y,
+        split_raster(intensity_tif,tile_dir+"/intensity","intensity_",tile_size_x,tile_size_y,
                      overlap_size)
 
     # Get tile_ids
@@ -78,7 +77,7 @@ def main():
     # Create output dirs
     if not os.path.exists(tile_dir+"/labeled"):
         os.makedirs(tile_dir+"/labeled")
-
+        
     create_csv = True
     
     # Calculate features for each tile
@@ -86,7 +85,7 @@ def main():
         print(tile)
         
         wat_im_path = tile_dir+"/water/water_"+tile+".tif"
-        intensity_im_path = tile_dir+"/ndwi/ndwi_"+tile+".tif"
+        intensity_im_path = tile_dir+"/intensity/intensity_"+tile+".tif"
         labeled_out_path = tile_dir+"/labeled/labeled_"+tile+".tif"
 
         # Check if there are any water objects before calculating features
