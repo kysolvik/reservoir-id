@@ -27,21 +27,18 @@ import sys
 in_csv_path = sys.argv[1]
 out_csv_path = sys.argv[2]
 acut_small = int(sys.argv[3]) # Won't attempt to predict below this. Recommend 1 or 2
-acut_large = int(sys.argv[4]) # Won't attempt to predict above this. Recommend 500000
 
 # Testing
 #in_csv_path = "/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/skimage_try2/testprop.csv"
 #out_csv_path = "/Users/ksolvik/Documents/Research/MarciaWork/data/reservoir_id_data/skimage_try2/classified.csv"
 #acut_small=1
-#acut_large=500000
 
 # Set any attributes to exclude for this run
 exclude_atts = []
 
 # Load dataset
 dataset = pd.read_csv(in_csv_path,header=0)
-dataset_acut_large = dataset.loc[dataset['area'] < acut_large]
-dataset_acut = dataset_acut_large.loc[dataset_acut_large['area'] > acut_small]
+dataset_acut = dataset.loc[dataset['area'] > acut_small]
 
 # Add any attributes that are all nans to the exclude list
 for att in dataset.columns[1:]:
@@ -107,15 +104,15 @@ for name, model in models:
 
 
 # Define random forest
-rf = RandomForestClassifier(n_estimators=100)
+rf = RandomForestClassifier(n_estimators=64)
 
 # Get learning curve for random forest
-#kfold = model_selection.KFold(n_splits=10, random_state=seed)
-#t_sizes, t_scores, cv_scores = model_selection.learning_curve(rf, X_train, Y_train, cv=kfold, scoring=scoring,train_sizes=np.array([ 0.1, 0.2, 0.3, 0.4,.5,.6,.7,.8,.9, 1. ]))
-#t_scores_mean = np.mean(t_scores,axis=1)
-#cv_scores_mean = np.mean(cv_scores,axis=1)
-#plt.plot(t_sizes,t_scores_mean,'r--',t_sizes,cv_scores_mean,'b--')
-#plt.show()
+kfold = model_selection.KFold(n_splits=10, random_state=seed)
+t_sizes, t_scores, cv_scores = model_selection.learning_curve(rf, X_train, Y_train, cv=kfold, scoring=scoring,train_sizes=np.array([ 0.1, 0.2, 0.3, 0.4,.5,.6,.7,.8,.9, 1. ]))
+t_scores_mean = np.mean(t_scores,axis=1)
+cv_scores_mean = np.mean(cv_scores,axis=1)
+plt.plot(t_sizes,t_scores_mean,'r--',t_sizes,cv_scores_mean,'b--')
+plt.show()
 
 # Make predictions on test dataset
 rf.fit(X_train, Y_train)

@@ -30,9 +30,7 @@ from split_recombine_raster import *
 from find_training_regs import *
 
 #===============================================================================
-# Test mode true means that it will only run for training set.
-test_mode = True
-split = True
+split = False
 
 # Get command line arguments
 wat_tif = sys.argv[1]
