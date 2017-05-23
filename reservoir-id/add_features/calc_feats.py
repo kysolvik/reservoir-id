@@ -1,18 +1,14 @@
 #!/usr/bin/env python
 
-import sys
-import os
-import math
-import matplotlib.pyplot as plt
 import numpy as np
 from skimage.measure import label, regionprops
 from skimage.segmentation import clear_border
 from skimage.transform import resize
-import gdal
 from os import path
+import gdal
 import pandas as pd
 
-from read_write import *
+from ..io import read_write
 
 # Fill out feature dict 
 def get_feat_dict(i,plist,tile_id,plist_get):
@@ -34,13 +30,6 @@ def get_feat_dict(i,plist,tile_id,plist_get):
 
 # Find some extra intensity features based on OUTSIDE the region
 def calc_intensity_feats(int_im,bbox,region):
-    # y_grow = int(round((bbox[2]-bbox[0])*.15))
-    # x_grow = int(round((bbox[3]-bbox[1])*.15))
-    # y_max,x_max = int_im.shape
-    # expanded_bbox = (max(bbox[0] - y_grow,1),max(bbox[1] - x_grow,1),
-    #             min(bbox[2] + y_grow,y_max),min(bbox[3] + x_grow,x_max))
-    # int_bbox = int_im[expanded_bbox[0]:expanded_bbox[2],
-    #                  expanded_bbox[1]:expanded_bbox[3]]
     int_bbox = int_im[bbox[0]:bbox[2],
                       bbox[1]:bbox[3]]
     outsidereg = np.invert(region)
@@ -84,11 +73,11 @@ def get_pixel_feats(int_im,bbox):
     return(np.ndarray.flatten(resized_im))
     
 # Main function to calculate all the features
-def calc_shape_features(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
+def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
 
     # Read Images
-    wat_im,geotrans = read_image(wat_im_path)
-    intensity_im,foo = read_image(intensity_im_path)
+    wat_im,geotrans = read_write.read_image(wat_im_path)
+    intensity_im,foo = read_write.read_image(intensity_im_path)
 
     # Get the ID of the current tile
     tile_id = '_'.join(path.splitext(path.basename(wat_im_path))[0].split("_")[-2:])
@@ -99,7 +88,7 @@ def calc_shape_features(wat_im_path,intensity_im_path,labeled_out_path,plist_get
     plist = regionprops(wat_labeled, intensity_image = intensity_im)
     
     # Save water labeled tiff
-    write_image(wat_labeled,wat_im_path,labeled_out_path,gdal.GDT_UInt16)
+    read_write.write_image(wat_labeled,wat_im_path,labeled_out_path,gdal.GDT_UInt16)
     
     # Construct feature df
     for i in range(0,len(plist)):

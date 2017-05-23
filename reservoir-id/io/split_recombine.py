@@ -1,9 +1,7 @@
 #! /usr/bin/env python
 
-import sys
 import os
 import gdal
-
 
 def split_raster(in_tif,out_dir,out_prefix,tile_size_x,tile_size_y,
                  overlap_size):
