@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 
-import sys
-import os
-import math
-import numpy as np
 import gdal
-from os import path
-import pandas as pd
 
 # Read in tif as array
 def read_image(filepath):

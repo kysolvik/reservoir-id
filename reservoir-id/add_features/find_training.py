@@ -1,17 +1,8 @@
 #!/usr/bin/env python
 
-import sys
-import os
-import math
 import numpy as np
-import gdal
-from os import path
-from read_write import *
 
-# # For testing
-# pos_csv_path="/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/training_points/all_res.csv"
-# neg_csv_path="/Users/ksolvik/Documents/Research/MarciaWork/data/build_attribute_table/training_points/all_nonres.csv"
-# labeled_image_path="./labeltest.tif"
+from ..io import read_write
 
 # Given the points, find the indices in the image array
 def get_train_indices(coords,geotrans):
@@ -22,8 +13,8 @@ def get_train_indices(coords,geotrans):
 
 # Inputs: paths to csvs of positive and negative training points, a labeled image
 # Output: array of region IDs that are positive and negative
-def find_training_ids(pos_csv_path,neg_csv_path,labeled_image_path):
-    labeled_image,geotrans = read_image(labeled_image_path)
+def training_ids(pos_csv_path,neg_csv_path,labeled_image_path):
+    labeled_image,geotrans = read_write.read_image(labeled_image_path)
 
     ysize,xsize = labeled_image.shape
     
