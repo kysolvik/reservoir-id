@@ -104,15 +104,15 @@ for name, model in models:
 
 
 # Define random forest
-rf = RandomForestClassifier(n_estimators=64)
+rf = RandomForestClassifier(n_estimators=128)
 
-# Get learning curve for random forest
-kfold = model_selection.KFold(n_splits=10, random_state=seed)
-t_sizes, t_scores, cv_scores = model_selection.learning_curve(rf, X_train, Y_train, cv=kfold, scoring=scoring,train_sizes=np.array([ 0.1, 0.2, 0.3, 0.4,.5,.6,.7,.8,.9, 1. ]))
-t_scores_mean = np.mean(t_scores,axis=1)
-cv_scores_mean = np.mean(cv_scores,axis=1)
-plt.plot(t_sizes,t_scores_mean,'r--',t_sizes,cv_scores_mean,'b--')
-plt.show()
+# # Get learning curve for random forest
+# kfold = model_selection.KFold(n_splits=10, random_state=seed)
+# t_sizes, t_scores, cv_scores = model_selection.learning_curve(rf, X_train, Y_train, cv=kfold, scoring=scoring,train_sizes=np.array([ 0.1, 0.2, 0.3, 0.4,.5,.6,.7,.8,.9, 1. ]))
+# t_scores_mean = np.mean(t_scores,axis=1)
+# cv_scores_mean = np.mean(cv_scores,axis=1)
+# plt.plot(t_sizes,t_scores_mean,'r--',t_sizes,cv_scores_mean,'b--')
+# plt.show()
 
 # Make predictions on test dataset
 rf.fit(X_train, Y_train)
