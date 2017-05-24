@@ -41,7 +41,7 @@ exclude_att_patterns = []
 dataset = pd.read_csv(in_csv_path,header=0)
 dataset_acut = dataset.loc[dataset['area'] > acut_small]
 
-# Add any attributes that are all nans to the exclude list
+# Exclude attributes matching user input patterns, or if they are all nans
 exclude_atts = []
 for pattern in exclude_att_patterns:
         col_list = [col for col in dataset_acut.columns if pattern in col]
