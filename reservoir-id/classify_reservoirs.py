@@ -35,17 +35,23 @@ acut_small = int(sys.argv[3]) # Won't attempt to predict below this. Recommend 1
 #acut_small=1
 
 # Set any attributes to exclude for this run
-exclude_atts = []
+exclude_att_patterns = ['pixval']
 
 # Load dataset
 dataset = pd.read_csv(in_csv_path,header=0)
 dataset_acut = dataset.loc[dataset['area'] > acut_small]
 
 # Add any attributes that are all nans to the exclude list
+exclude_atts = []
+for pattern in exclude_att_patterns:
+        col_list = [col for col in dataset_acut.columns if pattern in col]
+        exclude_atts.extend(col_list)
+
 for att in dataset.columns[1:]:
         if sum(np.isfinite(dataset[att])) == 0:
                 exclude_atts.append(att)
 
+                
 for att in exclude_atts:
     del dataset_acut[att]
 
