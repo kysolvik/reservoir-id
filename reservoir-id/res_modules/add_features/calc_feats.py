@@ -7,6 +7,7 @@ from skimage.transform import resize
 from os import path
 import gdal
 import pandas as pd
+import math
 
 from ..res_io import read_write
 
@@ -82,16 +83,32 @@ def calc_intensity_feats(int_im,bbox,region):
             out_median_int,out_75th_int,in_sd_int,in_25th_int,in_median_int,
             in_75th_int])
 
-# Add intensity
+# Add all intensity pixels from resized bounding box
 def get_pixel_feats(int_im,bbox):
     # Grow bounding box by 25% in each direction
     new_bbox = grow_bbox(bbox,.25,True,int_im)
     # Rescale
     int_expanded_bbox = int_im[new_bbox[0]:new_bbox[2],new_bbox[1]:new_bbox[3]]
-    resized_im = resize(int_expanded_bbox,(30,30),mode ='symmetric')
-    
+    resized_im = resize(int_expanded_bbox,(30,30),mode ='symmetric')    
     return(np.ndarray.flatten(resized_im))
-    
+
+# Add dervied features
+def add_log_sqrt_sq(feature_dict):
+    new_dict = feature_dict
+    for key in feature_dict.keys():
+        if np.isnan(feature_dict[key]):
+            new_dict.update({"log"+key:np.nan})
+            new_dict.update({"sq"+key:np.nan})
+            new_dict.update({"sqrt"+key:np.nan})
+        else:
+            if feature_dict[key] == 0:
+                new_dict.update({"log"+key:0})
+            else:
+                new_dict.update({"log"+key:math.log(abs(feature_dict[key]))})
+            new_dict.update({"sq"+key:pow(feature_dict[key],2)})
+            new_dict.update({"sqrt"+key:math.sqrt(abs(feature_dict[key]))})
+    return(new_dict)
+
 # Main function to calculate all the features
 def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
 
@@ -115,7 +132,8 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
         
         feature_dict = get_feat_dict(i,plist,tile_id,plist_get)
 
-        # Add extra features
+        ### Add extra features
+        # Intensity mean, max, min, and quartiles inside and out of region
         extra_int_feats = calc_intensity_feats(intensity_im,plist[i].bbox,
                                                plist[i].image)
         feature_dict.update({'out_mean_int':extra_int_feats[0],
@@ -130,9 +148,12 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
                              'in_median_int':extra_int_feats[9],
                              'in_75th_int':extra_int_feats[10]})
         # # Pixel features from intensity bbox rescaled to 30,30
-        pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
-        feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
- 
+        # pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
+        # feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
+
+        # log, sqrt, and sq of all existing features
+        feature_dict = add_log_sqrt_sq(feature_dict)
+
         colnames = ['id','class'] + feature_dict.keys()
 
         if i == 0:
