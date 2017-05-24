@@ -79,7 +79,7 @@ def main():
         os.makedirs(tile_dir+"/labeled")
     prop_csv_dir = os.path.dirname(prop_csv_outpath)
     if not os.path.exists(prop_csv_dir):
-        os.makedirs(prop_csv_dir))
+        os.makedirs(prop_csv_dir)
                 
     # Calculate features for each tile
     create_csv = True
