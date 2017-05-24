@@ -28,10 +28,33 @@ def get_feat_dict(i,plist,tile_id,plist_get):
             fdict[get_prop] = prop_val
     return(fdict)
 
+# Given old bounding box, grows it by a fraction
+# If desired, can make it square (+/- 1 pixel right now)
+def grow_bbox(bbox,frac_grow,make_sq_flag,im):
+    side_lengths = [bbox[2]-bbox[0],bbox[3]-bbox[1]]
+    im_dims = list(im.shape)[::-1]
+    grow_pix = [0,0]
+    if make_sq_flag:
+        max_side = side_lengths.index(max(side_lengths))
+        min_side = abs(max_side-1)
+        grow_pix[max_side] = int(round((side_lengths[max_side])*frac_grow))
+        grow_pix[min_side] = int(grow_pix[max_side] +
+                                 round(side_lengths[max_side]-
+                                       side_lengths[min_side])/2)
+    else:
+        grow_pix[0] = int(round((side_lengths[0])*frac_grow))
+        grow_pix[1] = int(round((side_lengths[1])*frac_grow))
+    new_bbox = (max(bbox[0] - grow_pix[0],1),
+                max(bbox[1] - grow_pix[1],1),
+                min(bbox[2] + grow_pix[0],im_dims[0]),
+                min(bbox[3] + grow_pix[1],im_dims[1]))
+    return(new_bbox)
+
 # Find some extra intensity features based on OUTSIDE the region
 def calc_intensity_feats(int_im,bbox,region):
-    int_bbox = int_im[bbox[0]:bbox[2],
-                      bbox[1]:bbox[3]]
+    new_bbox = bbox #grow_bbox(bbox,.1,True,int_im)
+    int_bbox = int_im[new_bbox[0]:new_bbox[2],
+                      new_bbox[1]:new_bbox[3]]
     outsidereg = np.invert(region)
     if(np.any(outsidereg)):
         intensity_vals_out = int_bbox[outsidereg]
@@ -58,18 +81,15 @@ def calc_intensity_feats(int_im,bbox,region):
     return([out_mean_int,out_max_int,out_min_int,out_sd_int,out_25th_int,
             out_median_int,out_75th_int,in_sd_int,in_25th_int,in_median_int,
             in_75th_int])
-    
+
 # Add intensity
 def get_pixel_feats(int_im,bbox):
     # Grow bounding box by 25% in each direction
-    y_grow = int(round((bbox[2]-bbox[0])*.25))
-    x_grow = int(round((bbox[3]-bbox[1])*.25))
-    y_max,x_max = int_im.shape
-    new_bbox = (max(bbox[0] - y_grow,1),max(bbox[1] - x_grow,1),
-            min(bbox[2] + y_grow,y_max),min(bbox[3] + x_grow,x_max))
+    new_bbox = grow_bbox(bbox,.25,True,int_im)
     # Rescale
     int_expanded_bbox = int_im[new_bbox[0]:new_bbox[2],new_bbox[1]:new_bbox[3]]
     resized_im = resize(int_expanded_bbox,(30,30),mode ='symmetric')
+    
     return(np.ndarray.flatten(resized_im))
     
 # Main function to calculate all the features
@@ -109,9 +129,9 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
                              'in_25th_int':extra_int_feats[8],
                              'in_median_int':extra_int_feats[9],
                              'in_75th_int':extra_int_feats[10]})
-        # # Pixel features from intensity bbox rescaled to 50,50
-        # pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
-        # feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
+        # # Pixel features from intensity bbox rescaled to 30,30
+        pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
+        feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
  
         colnames = ['id','class'] + feature_dict.keys()
 
