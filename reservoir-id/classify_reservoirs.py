@@ -35,7 +35,7 @@ acut_small = int(sys.argv[3]) # Won't attempt to predict below this. Recommend 1
 #acut_small=1
 
 # Set any attributes to exclude for this run
-exclude_att_patterns = ['pixval']
+exclude_att_patterns = []
 
 # Load dataset
 dataset = pd.read_csv(in_csv_path,header=0)
@@ -51,10 +51,9 @@ for att in dataset.columns[1:]:
         if sum(np.isfinite(dataset[att])) == 0:
                 exclude_atts.append(att)
 
-                
-for att in exclude_atts:
+for att in list(set(exclude_atts)):
     del dataset_acut[att]
-
+    
 (ds_y,ds_x) = dataset_acut.shape
 print(ds_y,ds_x)
 
