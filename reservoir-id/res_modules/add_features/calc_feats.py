@@ -96,7 +96,7 @@ def get_pixel_feats(int_im,bbox):
 def add_log_sqrt_sq(feature_dict):
     new_dict = feature_dict
     for key in feature_dict.keys():
-        if np.isnan(feature_dict.key):
+        if np.isnan(feature_dict[key]):
             new_dict.update({"log"+key:np.nan})
             new_dict.update({"sq"+key:np.nan})
             new_dict.update({"sqrt"+key:np.nan})
