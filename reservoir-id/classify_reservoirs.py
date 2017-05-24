@@ -35,17 +35,23 @@ acut_small = int(sys.argv[3]) # Won't attempt to predict below this. Recommend 1
 #acut_small=1
 
 # Set any attributes to exclude for this run
-exclude_atts = []
+exclude_att_patterns = ['pixval']
 
 # Load dataset
 dataset = pd.read_csv(in_csv_path,header=0)
 dataset_acut = dataset.loc[dataset['area'] > acut_small]
 
 # Add any attributes that are all nans to the exclude list
+exclude_atts = []
+for pattern in exclude_att_patterns:
+        col_list = [col for col in dataset_acut.columns if pattern in col]
+        exclude_atts.extend(col_list)
+
 for att in dataset.columns[1:]:
         if sum(np.isfinite(dataset[att])) == 0:
-                    exclude_atts.append(att)
+                exclude_atts.append(att)
 
+                
 for att in exclude_atts:
     del dataset_acut[att]
 
@@ -61,7 +67,7 @@ Y = array[:,1].astype(int)
 X = np.nan_to_num(X)
 
 # Scale!
-X_scaled = preprocessing.robust_scale(X)
+X_scaled = X #preprocessing.scale(X)
 X_scaled_classified = X_scaled[Y > 0]
 Y_classified = Y[Y > 0]
 
@@ -77,19 +83,21 @@ scoring = 'accuracy'
 
 # Spot Check Algorithms
 models = []
-models.append(('LR.1', LogisticRegression(C=.1)))
-models.append(('LR1', LogisticRegression(C=1)))
-models.append(('LR10', LogisticRegression(C=10)))
-models.append(('LDA', LinearDiscriminantAnalysis()))
-models.append(('KNN', KNeighborsClassifier()))
-models.append(('CART', DecisionTreeClassifier()))
-models.append(('NB', GaussianNB()))
-models.append(('SVM10', SVC(C=10)))
-models.append(('SVM1',SVC(C=1)))
-models.append(('SVM.1',SVC(C=.1)))
+# models.append(('LR.1', LogisticRegression(C=.1)))
+# models.append(('LR1', LogisticRegression(C=1)))
+# models.append(('LR10', LogisticRegression(C=10)))
+# models.append(('LDA', LinearDiscriminantAnalysis()))
+# models.append(('KNN', KNeighborsClassifier()))
+# models.append(('CART', DecisionTreeClassifier()))
+# models.append(('NB', GaussianNB()))
+# models.append(('SVM10', SVC(C=10)))
+# models.append(('SVM1',SVC(C=1)))
+# models.append(('SVM.1',SVC(C=.1)))
 models.append(('RF10',RandomForestClassifier(n_estimators=10)))
 models.append(('RF64',RandomForestClassifier(n_estimators=64)))
+models.append(('RF80',RandomForestClassifier(n_estimators=80)))
 models.append(('RF100',RandomForestClassifier(n_estimators=100)))
+models.append(('RF120',RandomForestClassifier(n_estimators=120)))
               
 # evaluate each model in turn
 results = []
@@ -105,7 +113,7 @@ for name, model in models:
 
 
 # Define random forest
-rf = RandomForestClassifier(n_estimators=128)
+rf = RandomForestClassifier(n_estimators=100)
 
 # # Get learning curve for random forest
 # kfold = model_selection.KFold(n_splits=10, random_state=seed)
@@ -130,8 +138,8 @@ print(classification_report(Y_test, rf_predictions))
 
 
 # Run on full dataset
-#rf = RandomForestClassifier(n_estimators=200)
-#rf.fit(X_scaled_classified,Y_classified)
+rf = RandomForestClassifier(n_estimators=100)
+rf.fit(X_scaled_classified,Y_classified)
 rf_full_pred = rf.predict(X_scaled)
 dataset_out = dataset_acut
 dataset_out["rf_pred"] = rf_full_pred
