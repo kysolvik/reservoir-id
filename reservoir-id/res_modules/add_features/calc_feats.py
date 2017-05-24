@@ -132,7 +132,8 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
         
         feature_dict = get_feat_dict(i,plist,tile_id,plist_get)
 
-        # Add extra features
+        ### Add extra features
+        # Intensity mean, max, min, and quartiles inside and out of region
         extra_int_feats = calc_intensity_feats(intensity_im,plist[i].bbox,
                                                plist[i].image)
         feature_dict.update({'out_mean_int':extra_int_feats[0],
@@ -147,10 +148,12 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
                              'in_median_int':extra_int_feats[9],
                              'in_75th_int':extra_int_feats[10]})
         # # Pixel features from intensity bbox rescaled to 30,30
-#        pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
-#        feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
+        # pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
+        # feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
 
+        # log, sqrt, and sq of all existing features
         feature_dict = add_log_sqrt_sq(feature_dict)
+
         colnames = ['id','class'] + feature_dict.keys()
 
         if i == 0:
