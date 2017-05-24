@@ -95,12 +95,18 @@ def get_pixel_feats(int_im,bbox):
 # Add dervied features
 def add_log_sqrt_sq(feature_dict):
     new_dict = feature_dict
-    new_dict.update({"log"+key:math.log(abs(feature_dict[key]))
-                     for key in feature_dict.keys()})
-    new_dict.update({"sq"+key:pow(feature_dict[key],2)
-                     for key in feature_dict.keys()})
-    new_dict.update({"sqrt"+key:math.sqrt(abs(feature_dict[key]))
-                     for key in feature_dict.keys()})
+    for key in feature_dict.keys():
+        if np.isnan(feature_dict.key):
+            new_dict.update({"log"+key:np.nan})
+            new_dict.update({"sq"+key:np.nan})
+            new_dict.update({"sqrt"+key:np.nan})
+        else:
+            if feature_dict[key] == 0:
+                new_dict.update({"log"+key:0})
+            else:
+                new_dict.update({"log"+key:math.log(abs(feature_dict[key]))})
+            new_dict.update({"sq"+key:pow(feature_dict[key],2)})
+            new_dict.update({"sqrt"+key:math.sqrt(abs(feature_dict[key]))})
     return(new_dict)
 
 # Main function to calculate all the features
@@ -144,7 +150,7 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
 #        pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
 #        feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
 
-        feature_dict = add_log_sqrt_sq(feature_dict
+        feature_dict = add_log_sqrt_sq(feature_dict)
         colnames = ['id','class'] + feature_dict.keys()
 
         if i == 0:
