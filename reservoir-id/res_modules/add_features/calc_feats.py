@@ -89,6 +89,7 @@ def get_pixel_feats(int_im,bbox):
     # Rescale
     int_expanded_bbox = int_im[new_bbox[0]:new_bbox[2],new_bbox[1]:new_bbox[3]]
     resized_im = resize(int_expanded_bbox,(30,30),mode ='symmetric')
+    
     return(np.ndarray.flatten(resized_im))
     
 # Main function to calculate all the features
