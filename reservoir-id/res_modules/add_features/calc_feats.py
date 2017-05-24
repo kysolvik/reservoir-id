@@ -151,7 +151,7 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
         # pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
         # feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
 
-        # log, sqrt, and sq of all existing features
+        # # log, sqrt, and sq of all existing features
         # feature_dict = add_log_sqrt_sq(feature_dict)
 
         colnames = ['id','class'] + feature_dict.keys()
