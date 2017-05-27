@@ -61,6 +61,7 @@ def calc_intensity_feats(int_im,bbox,region):
     int_bbox = int_im[bbox[0]:bbox[2],
                       bbox[1]:bbox[3]]
     outsidereg = np.invert(region)
+    int_feats_df = pd.
     if(np.any(outsidereg)):
         intensity_vals_out = int_bbox[outsidereg]
         out_mean_int = np.mean(intensity_vals_out)
