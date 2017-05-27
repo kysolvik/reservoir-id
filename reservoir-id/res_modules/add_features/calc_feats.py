@@ -42,13 +42,13 @@ def expand_bbox(bbox,grow_pix,make_sq_flag,im):
         min_side = abs(max_side-1)
         bbox_grow[max_side] = grow_pix
         bbox_grow[min_side] = int(bbox_grow[max_side] +
-                                 round(side_lengths[max_side]-
-                                       side_lengths[min_side])/2)
+                                  round(side_lengths[max_side]-
+                                        side_lengths[min_side])/2)
     else:
         bbox_grow = [50,50]
     new_bbox = (bbox[0] - bbox_grow[0],
-                bbox[1] - bbox_grow[1]
-                bbox[2] + bbox_grow[0]
+                bbox[1] - bbox_grow[1],
+                bbox[2] + bbox_grow[0],
                 bbox[3] + bbox_grow[1])
     if any(b < 0 or b > im_dims[0] for b in new_bbox):
         # If new bbox overlaps image edge, return false for first arg
@@ -142,11 +142,11 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
 
             ### Add extra features
             # Intensity mean, max, min, and quartiles inside and out of region
-            new_bbox_reg = wat_labeled[expanded_bbox[0]:expanded_bbox[2]
+            expanded_bbox_reg = wat_labeled[expanded_bbox[0]:expanded_bbox[2]
                                        ,expanded_bbox[1]:expanded_bbox[3]] \
                                        == (i+1)
             extra_int_feats = calc_intensity_feats(intensity_im,expanded_bbox,
-                                                   wat_labeled[ == (i+1))
+                                                   expanded_bbox_reg)
             feature_dict.update({'out_mean_int':extra_int_feats[0],
                                  'out_max_int':extra_int_feats[1],
                                  'out_min_int':extra_int_feats[2],
@@ -159,7 +159,7 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
                                  'in_median_int':extra_int_feats[9],
                                  'in_75th_int':extra_int_feats[10]})
             # # Pixel features from intensity bbox rescaled to 30,30
-            # pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
+            # pix_val_array = get_pixel_feats(intensity_im,expanded_bbox)        
             # feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
             
             # # log, sqrt, and sq of all existing features
