@@ -11,6 +11,9 @@ import math
 
 from ..res_io import read_write
 
+make_sq = True
+bbox_grow_pixels= 50
+
 # Fill out feature dict 
 def get_feat_dict(i,plist,tile_id,plist_get):
     fdict = {}
@@ -29,33 +32,34 @@ def get_feat_dict(i,plist,tile_id,plist_get):
             fdict[get_prop] = prop_val
     return(fdict)
 
-# Given old bounding box, grows it by a fraction
-# If desired, can make it square (+/- 1 pixel right now)
-def grow_bbox(bbox,frac_grow,make_sq_flag,im):
+# Expand the bounding box by a certain number of pixels, make square
+def expand_bbox(bbox,grow_pix,make_sq_flag,im):
     side_lengths = [bbox[2]-bbox[0],bbox[3]-bbox[1]]
     im_dims = list(im.shape)[::-1]
-    grow_pix = [0,0]
+    bbox_grow = [0,0]
     if make_sq_flag:
         max_side = side_lengths.index(max(side_lengths))
         min_side = abs(max_side-1)
-        grow_pix[max_side] = int(round((side_lengths[max_side])*frac_grow))
-        grow_pix[min_side] = int(grow_pix[max_side] +
+        bbox_grow[max_side] = grow_pix
+        bbox_grow[min_side] = int(bbox_grow[max_side] +
                                  round(side_lengths[max_side]-
                                        side_lengths[min_side])/2)
     else:
-        grow_pix[0] = int(round((side_lengths[0])*frac_grow))
-        grow_pix[1] = int(round((side_lengths[1])*frac_grow))
-    new_bbox = (max(bbox[0] - grow_pix[0],1),
-                max(bbox[1] - grow_pix[1],1),
-                min(bbox[2] + grow_pix[0],im_dims[0]),
-                min(bbox[3] + grow_pix[1],im_dims[1]))
-    return(new_bbox)
+        bbox_grow = [50,50]
+    new_bbox = (bbox[0] - bbox_grow[0],
+                bbox[1] - bbox_grow[1]
+                bbox[2] + bbox_grow[0]
+                bbox[3] + bbox_grow[1])
+    if any(b < 0 or b > im_dims[0] for b in new_bbox):
+        # If new bbox overlaps image edge, return false for first arg
+        return(False,new_bbox)
+    else:
+        return(True,new_bbox)
 
 # Find some extra intensity features based on OUTSIDE the region
 def calc_intensity_feats(int_im,bbox,region):
-    new_bbox = bbox #grow_bbox(bbox,.1,True,int_im)
-    int_bbox = int_im[new_bbox[0]:new_bbox[2],
-                      new_bbox[1]:new_bbox[3]]
+    int_bbox = int_im[bbox[0]:bbox[2],
+                      bbox[1]:bbox[3]]
     outsidereg = np.invert(region)
     if(np.any(outsidereg)):
         intensity_vals_out = int_bbox[outsidereg]
@@ -85,11 +89,9 @@ def calc_intensity_feats(int_im,bbox,region):
 
 # Add all intensity pixels from resized bounding box
 def get_pixel_feats(int_im,bbox):
-    # Grow bounding box by 25% in each direction
-    new_bbox = grow_bbox(bbox,.25,True,int_im)
     # Rescale
-    int_expanded_bbox = int_im[new_bbox[0]:new_bbox[2],new_bbox[1]:new_bbox[3]]
-    resized_im = resize(int_expanded_bbox,(30,30),mode ='symmetric')    
+    int_bbox = int_im[bbox[0]:bbox[2],bbox[1]:bbox[3]]
+    resized_im = resize(int_bbox,(30,30),mode ='symmetric')    
     return(np.ndarray.flatten(resized_im))
 
 # Add dervied features
@@ -126,39 +128,52 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
     
     # Save water labeled tiff
     read_write.write_image(wat_labeled,wat_im_path,labeled_out_path,gdal.GDT_UInt16)
-    
+
+    create_df_flag = True
+    df_rownum = 0
     # Construct feature df
     for i in range(0,len(plist)):
-        
-        feature_dict = get_feat_dict(i,plist,tile_id,plist_get)
 
-        ### Add extra features
-        # Intensity mean, max, min, and quartiles inside and out of region
-        extra_int_feats = calc_intensity_feats(intensity_im,plist[i].bbox,
-                                               plist[i].image)
-        feature_dict.update({'out_mean_int':extra_int_feats[0],
-                             'out_max_int':extra_int_feats[1],
-                             'out_min_int':extra_int_feats[2],
-                             'out_sd_int':extra_int_feats[3],
-                             'out_25th_int':extra_int_feats[4],
-                             'out_median_int':extra_int_feats[5],
-                             'out_75th_int':extra_int_feats[6],
-                             'in_sd_int':extra_int_feats[7],
-                             'in_25th_int':extra_int_feats[8],
-                             'in_median_int':extra_int_feats[9],
-                             'in_75th_int':extra_int_feats[10]})
-        # # Pixel features from intensity bbox rescaled to 30,30
-        # pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
-        # feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
+        # Check if the expanded bbox is valid
+        no_overlap,expanded_bbox = expand_bbox(plist[i].bbox,
+                                               bbox_grow_pixels,make_sq,wat_im)
+        if no_overlap:
+            feature_dict = get_feat_dict(i,plist,tile_id,plist_get)
 
-        # # log, sqrt, and sq of all existing features
-        # feature_dict = add_log_sqrt_sq(feature_dict)
+            ### Add extra features
+            # Intensity mean, max, min, and quartiles inside and out of region
+            new_bbox_reg = wat_labeled[expanded_bbox[0]:expanded_bbox[2]
+                                       ,expanded_bbox[1]:expanded_bbox[3]] \
+                                       == (i+1)
+            extra_int_feats = calc_intensity_feats(intensity_im,expanded_bbox,
+                                                   wat_labeled[ == (i+1))
+            feature_dict.update({'out_mean_int':extra_int_feats[0],
+                                 'out_max_int':extra_int_feats[1],
+                                 'out_min_int':extra_int_feats[2],
+                                 'out_sd_int':extra_int_feats[3],
+                                 'out_25th_int':extra_int_feats[4],
+                                 'out_median_int':extra_int_feats[5],
+                                 'out_75th_int':extra_int_feats[6],
+                                 'in_sd_int':extra_int_feats[7],
+                                 'in_25th_int':extra_int_feats[8],
+                                 'in_median_int':extra_int_feats[9],
+                                 'in_75th_int':extra_int_feats[10]})
+            # # Pixel features from intensity bbox rescaled to 30,30
+            # pix_val_array = get_pixel_feats(intensity_im,plist[i].bbox)        
+            # feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
+            
+            # # log, sqrt, and sq of all existing features
+            # feature_dict = add_log_sqrt_sq(feature_dict)
 
-        colnames = ['id','class'] + feature_dict.keys()
+            colnames = ['id','class'] + feature_dict.keys()
+            
+            if create_df_flag:
+                feature_df = pd.DataFrame(columns = colnames)
+                create_df_flag = False
+                
+            feature_df.loc[df_rownum,colnames] = [tile_id + "-" + str(i+1),0] + \
+                                         feature_dict.values()
+            df_rownum += 1
 
-        if i == 0:
-            feature_df = pd.DataFrame(columns = colnames)
-        
-        feature_df.loc[i,colnames] = [tile_id + "-" + str(i+1),0] + feature_dict.values()
 
-    return(feature_df)
+        return(feature_df)

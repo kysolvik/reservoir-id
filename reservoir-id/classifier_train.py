@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """
 Train random forest classifier
 Inputs: CSV from build_att_table, small area cutoff
