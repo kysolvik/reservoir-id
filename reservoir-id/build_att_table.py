@@ -93,30 +93,30 @@ def main():
         # Check if there are any water objects before calculating features
         wat_im,foo = read_write.read_image(wat_im_path)
         if (wat_im.max()>0):
-            feature_dataframe = calc_feats.shape_feats(wat_im_path,intensity_im_path,
+            valid, feature_dataframe = calc_feats.shape_feats(wat_im_path,intensity_im_path,
                                                 labeled_out_path,prop_list_get)
+            if valid:
+                # Find training examples
+                pos_ids,neg_ids = find_training.training_ids(pos_training_csv,
+                                                             neg_training_csv,
+                                                             labeled_out_path)
 
-            # Find training examples
-            pos_ids,neg_ids = find_training.training_ids(pos_training_csv,
-                                                              neg_training_csv,
-                                                              labeled_out_path)
-
-            # Identify training examples in dataframe
-            feature_dataframe.loc[feature_dataframe['id'].
-                                  isin([tile + "-" + str(i) for i in pos_ids]),
-                                  'class'] = 2
-            feature_dataframe.loc[feature_dataframe['id'].
-                                  isin([tile + "-" + str(i) for i in neg_ids]),
-                                  'class'] = 1
+                # Identify training examples in dataframe
+                feature_dataframe.loc[feature_dataframe['id'].
+                                      isin([tile + "-" + str(i) for i in pos_ids]),
+                                      'class'] = 2
+                feature_dataframe.loc[feature_dataframe['id'].
+                                      isin([tile + "-" + str(i) for i in neg_ids]),
+                                      'class'] = 1
         
-            # Append to csv
-            if create_csv:
-                feature_dataframe.to_csv(prop_csv_outpath, mode='w',
-                                         header=True, index=False)
-                create_csv = False
-            else: 
-                feature_dataframe.to_csv(prop_csv_outpath, mode='a',
-                                         header=False, index=False)
+                # Append to csv
+                if create_csv:
+                    feature_dataframe.to_csv(prop_csv_outpath, mode='w',
+                                             header=True, index=False)
+                    create_csv = False
+                else: 
+                    feature_dataframe.to_csv(prop_csv_outpath, mode='a',
+                                             header=False, index=False)
         
     return()
 

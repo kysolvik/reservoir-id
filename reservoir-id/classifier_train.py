@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """
 Train random forest classifier
 Inputs: CSV from build_att_table, small area cutoff
@@ -59,7 +60,7 @@ def main():
         X = np.nan_to_num(X)
 
         # Scale!
-        X_scaled = preprocessing.scale(X)
+        X_scaled = X # preprocessing.scale(X)
         X_scaled_classified = X_scaled[Y > 0]
         Y_classified = Y[Y > 0]
 
@@ -108,7 +109,7 @@ def main():
         # Make predictions on test dataset
         rf.fit(X_train, Y_train)
         print('Feature Importance')
-        print(dataset_acut.columns)
+        print(dataset_acut.columns[2:])
         print(rf.feature_importances_)
         # For training accuracy
         rf_train_predict = rf.predict(X_train)
