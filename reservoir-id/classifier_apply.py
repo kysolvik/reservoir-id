@@ -58,13 +58,15 @@ def main():
         X = np.nan_to_num(X)
 
         # Scale!
-        X_scaled = preprocessing.scale(X)
+        X_scaled = X #preprocessing.scale(X)
 
         # Export classifier trained on full data set
         clf = joblib.load(classifier_pkl)
         clf_pred = clf.predict(X_scaled)
         dataset_out = dataset_acut
         dataset_out["clf_pred"] = clf_pred
+        print(str(sum(clf_pred == 1)) + " classified as positive")
+        print(str(sum(clf_pred == 2)) + " classified as negative")
         dataset_out.to_csv(out_csv_path,index=False)
         
 if __name__ == '__main__':

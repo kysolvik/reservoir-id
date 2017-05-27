@@ -61,31 +61,25 @@ def calc_intensity_feats(int_im,bbox,region):
     int_bbox = int_im[bbox[0]:bbox[2],
                       bbox[1]:bbox[3]]
     outsidereg = np.invert(region)
-    if(np.any(outsidereg)):
-        intensity_vals_out = int_bbox[outsidereg]
-        out_mean_int = np.mean(intensity_vals_out)
-        out_max_int = np.max(intensity_vals_out)
-        out_min_int = np.min(intensity_vals_out)
-        out_sd_int = np.std(intensity_vals_out)
-        out_25th_int = np.percentile(intensity_vals_out,25)
-        out_median_int = np.percentile(intensity_vals_out,50)
-        out_75th_int = np.percentile(intensity_vals_out,75)    
-    else:
-        out_mean_int = np.nan
-        out_max_int = np.nan
-        out_min_int = np.nan
-        out_sd_int = np.nan
-        out_25th_int = np.nan
-        out_median_int = np.nan
-        out_75th_int = np.nan
+    int_feats_dict = {}
+    if not np.any(outsidereg):
+        print("Something wrong. No outside region")
+    # For outside
+    intensity_vals_out = int_bbox[outsidereg]
+    int_feats_dict['out_mean_int'] = np.mean(intensity_vals_out)
+    int_feats_dict['out_sd_int'] = np.std(intensity_vals_out)
+    int_feats_dict['out_var_int'] = np.var(intensity_vals_out)
+    for perc in range(0,101,5):
+        int_feats_dict['out_'+str(perc)+'_int'] = (
+            np.percentile(intensity_vals_out,perc))
+    # For inside. Mean, min, and max already exist in region props
     intensity_vals_in = int_bbox[region]
-    in_sd_int = np.std(intensity_vals_in)
-    in_25th_int = np.percentile(intensity_vals_in,25)
-    in_median_int = np.percentile(intensity_vals_in,50)
-    in_75th_int = np.percentile(intensity_vals_in,75)
-    return([out_mean_int,out_max_int,out_min_int,out_sd_int,out_25th_int,
-            out_median_int,out_75th_int,in_sd_int,in_25th_int,in_median_int,
-            in_75th_int])
+    int_feats_dict['in_sd_int'] = np.std(intensity_vals_in)
+    int_feats_dict['in_var_int'] = np.var(intensity_vals_in)
+    for perc in range(5,96,5): 
+        int_feats_dict['in_'+str(perc)+'_int'] = (
+            np.percentile(intensity_vals_in,perc))
+    return(int_feats_dict)
 
 # Add all intensity pixels from resized bounding box
 def get_pixel_feats(int_im,bbox):
@@ -147,17 +141,7 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
                                        == (i+1)
             extra_int_feats = calc_intensity_feats(intensity_im,expanded_bbox,
                                                    expanded_bbox_reg)
-            feature_dict.update({'out_mean_int':extra_int_feats[0],
-                                 'out_max_int':extra_int_feats[1],
-                                 'out_min_int':extra_int_feats[2],
-                                 'out_sd_int':extra_int_feats[3],
-                                 'out_25th_int':extra_int_feats[4],
-                                 'out_median_int':extra_int_feats[5],
-                                 'out_75th_int':extra_int_feats[6],
-                                 'in_sd_int':extra_int_feats[7],
-                                 'in_25th_int':extra_int_feats[8],
-                                 'in_median_int':extra_int_feats[9],
-                                 'in_75th_int':extra_int_feats[10]})
+            feature_dict.update(extra_int_feats)
             # # Pixel features from intensity bbox rescaled to 30,30
             # pix_val_array = get_pixel_feats(intensity_im,expanded_bbox)        
             # feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
