@@ -175,5 +175,8 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
                                          feature_dict.values()
             df_rownum += 1
 
-
-        return(feature_df)
+    valid = not create_df_flag
+    if valid:
+        return(valid, feature_df)
+    else:
+        return(valid,"not valid")
