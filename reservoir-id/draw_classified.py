@@ -13,7 +13,7 @@ from res_modules.res_io import read_write, split_recombine
 
 classified_csv_path = sys.argv[1]
 tile_dir_path = sys.argv[2]
-
+predict_column = 'clf_pred'
 def draw_classified(classified_csv,tile_dir):
 
     # Get CSV
@@ -21,7 +21,7 @@ def draw_classified(classified_csv,tile_dir):
     tile_ids_all = np.array([ i.split('-')[0] for i in class_df['id'] ])
     tile_ids_unique = np.unique(tile_ids_all)
     reg_nums = np.array([ int(i.split('-')[1]) for i in class_df['id'] ])
-    predictions = np.array((class_df['rf_pred']))
+    predictions = np.array((class_df[predict_column]))
     for tile in tile_ids_unique:
         pos_regions = reg_nums[(tile_ids_all == tile) & (predictions == 2)]
         neg_regions = reg_nums[(tile_ids_all == tile) & (predictions == 1)]
