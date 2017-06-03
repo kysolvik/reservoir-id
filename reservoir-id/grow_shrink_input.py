@@ -30,18 +30,18 @@ def grow_shrink(lc_array):
     # Recode non-water to 0
     lc_watonly = np.where(lc_array == water_class, 1, 0)
     # Execute shrink/grow
-    #se = cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5))
-    se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+    #se = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+    se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
     # Grow
-    lc_watonly = cv2.dilate(np.uint8(lc_watonly), se, iterations=5)
+    lc_watonly = cv2.dilate(np.uint8(lc_watonly), se, iterations=3)
     #Shrink
-    lc_watonly = cv2.erode(np.uint8(lc_watonly), se, iterations = 5)
+    lc_watonly = cv2.erode(np.uint8(lc_watonly), se, iterations = 3)
     return(np.uint8(lc_watonly))
 
 def main():
     # Read
-    lc = read_write.read_image(land_cover_path)
-
+    lc,geotrans = read_write.read_image(land_cover_path)
+    print(lc)
     # Grow/shrink
     if morph_truefalse:
         lc = grow_shrink(lc)
@@ -52,7 +52,7 @@ def main():
     print(lc.nbytes)
     
     # Write out to geotiff
-    read_write.write_image(lc,land_cover_path)
+    read_write.write_image(lc,land_cover_path,out_tif,gdal.GDT_Byte)
 
     
 if __name__ == '__main__':

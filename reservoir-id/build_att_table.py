@@ -40,9 +40,9 @@ pos_training_csv = sys.argv[5]
 neg_training_csv = sys.argv[6]
 prop_csv_outpath = sys.argv[7]
 
-tile_size_x = 4000
-tile_size_y = 4000
-overlap_size = 250
+tile_size_x = 8000
+tile_size_y = 8000
+overlap_size = 500
 
 prop_list_get = ['area','convex_area','eccentricity',
                  'equivalent_diameter','extent','inertia_tensor',
@@ -61,6 +61,7 @@ def main():
     if split:
         split_recombine.split_raster(wat_tif,tile_dir+"/water","water_",tile_size_x,tile_size_y,
                      overlap_size)
+        print(intensity_tif)
         split_recombine.split_raster(intensity_tif,tile_dir+"/intensity","intensity_",tile_size_x,tile_size_y,
                      overlap_size)
 
