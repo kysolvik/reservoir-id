@@ -65,6 +65,7 @@ def main():
         split_recombine.split_raster(intensity_tif,tile_dir+"/intensity","intensity_",tile_size_x,tile_size_y,
                      overlap_size)
 
+        print("Done with split")
     # Get tile_ids
     ds = gdal.Open(wat_tif)
     band = ds.GetRasterBand(1)
