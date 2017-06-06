@@ -25,7 +25,8 @@ import sys
 # Arguments
 in_csv_path = sys.argv[1]
 acut_small = int(sys.argv[2]) # Ignores regions smaller. Recommend 2-4 (pixels)
-classifier_pkl = sys.argv[3]
+num_trees = int(sys.argv[3])
+classifier_pkl = sys.argv[4]
 
 def main():
         # Set any attributes to exclude for this run
@@ -96,7 +97,7 @@ def main():
 
 
         # Define random forest
-        rf = RandomForestClassifier(n_estimators=100)
+        rf = RandomForestClassifier(n_estimators = num_trees)
 
         # # Get learning curve for random forest
         # kfold = model_selection.KFold(n_splits=10, random_state=seed)
@@ -122,7 +123,7 @@ def main():
         print(classification_report(Y_test, rf_predictions))
                 
         # Export classifier trained on full data set
-        rf_full = RandomForestClassifier(n_estimators=100)
+        rf_full = RandomForestClassifier(n_estimators = num_trees)
         rf_full.fit(X_scaled_classified,Y_classified)
         joblib.dump(rf, classifier_pkl)
         
