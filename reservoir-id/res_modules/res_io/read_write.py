@@ -13,8 +13,6 @@ def write_image(im,inpath,outpath,gdal_dtype):
     
     # Input
     source_ds = gdal.Open(inpath)
-    source_band = source_ds.GetRasterBand(1)
-    #x_min, x_max, y_min, y_max = source_band.GetExtent()
     
     # Destination
     dst_filename = outpath

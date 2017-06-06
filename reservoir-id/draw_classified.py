@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-## SCRIPT ##
+
 import sys
 import os
 import math
@@ -23,11 +23,13 @@ def draw_single_tile(tile,tile_ids_all,reg_nums,predictions,tile_dir):
 
     pos_temp_val = 3
     neg_temp_val = 2
-    wat_im_path = tile_dir + "/" + "water/water_" + tile + ".tif"
-    wat_im, foo = read_write.read_image(wat_im_path)
+    #wat_im_path = tile_dir + "/" + "water/water_" + tile + ".tif"
+    #wat_im, foo = read_write.read_image(wat_im_path)
     labeled_im_path = tile_dir + "/" + "labeled/labeled_" + tile + ".tif"
     labeled_im, foo = read_write.read_image(labeled_im_path)
-                                                                    
+    wat_im = labeled_im
+    wat_im[np.nonzero(wat_im)] = 1
+    
     for i in pos_regions:
         wat_im[labeled_im == i] = pos_temp_val
         
@@ -38,7 +40,7 @@ def draw_single_tile(tile,tile_ids_all,reg_nums,predictions,tile_dir):
     if not os.path.exists(tile_dir+"/classified"):
         os.makedirs(tile_dir+"/classified")
     
-    read_write.write_image(wat_im,wat_im_path,tile_dir + \
+    read_write.write_image(wat_im,labeled_im_path,tile_dir + \
                            "/classified/classified_" + tile,gdal.GDT_Byte)
               
 def draw_classified(classified_csv,tile_dir):
