@@ -42,7 +42,7 @@ def draw_single_tile(tile,tile_ids_all,reg_nums,predictions,tile_dir):
         os.makedirs(tile_dir+"/classified")
     
     read_write.write_image(wat_im,labeled_im_path,tile_dir + \
-                           "/classified/classified_" + tile,gdal.GDT_Byte)
+                           "/classified/classified_" + tile + ".tif",gdal.GDT_Byte)
               
 def draw_classified(classified_csv,tile_dir):
 
