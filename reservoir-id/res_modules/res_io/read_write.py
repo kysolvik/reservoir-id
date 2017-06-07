@@ -18,7 +18,7 @@ def write_image(im,inpath,outpath,gdal_dtype):
     dst_filename = outpath
     y_pixels, x_pixels = im.shape  # number of pixels in x
     driver = gdal.GetDriverByName('GTiff')
-    outds = driver.Create(dst_filename,x_pixels, y_pixels, 1,gdal_dtype)
+    outds = driver.Create(dst_filename,x_pixels, y_pixels, 1,gdal_dtype,options = [ 'COMPRESS=LZW' ])
     outds.GetRasterBand(1).WriteArray(im)
     
     # Add GeoTranform and Projection
