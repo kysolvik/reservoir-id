@@ -8,7 +8,8 @@ from os import path
 import gdal
 import pandas as pd
 import math
-
+from skimage.feature import hog
+import time
 from ..res_io import read_write
 
 make_sq = True
@@ -50,7 +51,7 @@ def expand_bbox(bbox,grow_pix,make_sq_flag,im):
                 bbox[1] - bbox_grow[1],
                 bbox[2] + bbox_grow[0],
                 bbox[3] + bbox_grow[1])
-    if any(b < 0 or b > im_dims[0] for b in new_bbox):
+    if any(b < 0 or b >= im_dims[0] for b in new_bbox):
         # If new bbox overlaps image edge, return false for first arg
         return(False,new_bbox)
     else:
@@ -79,7 +80,7 @@ def calc_intensity_feats(int_im,bbox,region):
     for perc in range(5,96,5): 
         int_feats_dict['in_'+str(perc)+'_int'] = (
             np.percentile(intensity_vals_in,perc))
-    return(int_feats_dict)
+    return(int_feats_dict,int_bbox)
 
 # Add all intensity pixels from resized bounding box
 def get_pixel_feats(int_im,bbox):
@@ -105,6 +106,12 @@ def add_log_sqrt_sq(feature_dict):
             new_dict.update({"sqrt"+key:math.sqrt(abs(feature_dict[key]))})
     return(new_dict)
 
+def calc_hog(int_bbox):
+    resized_im = resize(int_bbox,(50,50),mode ='symmetric')
+    fd = hog(resized_im, orientations=8, pixels_per_cell=(8, 8),
+             cells_per_block=(1, 1), visualise=False,block_norm='L2-Hys')
+    return(fd)
+
 # Main function to calculate all the features
 def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
 
@@ -127,11 +134,11 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
     df_rownum = 0
     # Construct feature df
     for i in range(0,len(plist)):
-
         # Check if the expanded bbox is valid
         no_overlap,expanded_bbox = expand_bbox(plist[i].bbox,
                                                bbox_grow_pixels,make_sq,wat_im)
         if no_overlap:
+#            ft_start = time.time()
             feature_dict = get_feat_dict(i,plist,tile_id,plist_get)
 
             ### Add extra features
@@ -139,25 +146,32 @@ def shape_feats(wat_im_path,intensity_im_path,labeled_out_path,plist_get):
             expanded_bbox_reg = wat_labeled[expanded_bbox[0]:expanded_bbox[2]
                                        ,expanded_bbox[1]:expanded_bbox[3]] \
                                        == (i+1)
-            extra_int_feats = calc_intensity_feats(intensity_im,expanded_bbox,
-                                                   expanded_bbox_reg)
+            extra_int_feats,int_bbox = calc_intensity_feats(intensity_im,
+                                                            expanded_bbox,
+                                                            expanded_bbox_reg)
             feature_dict.update(extra_int_feats)
             # # Pixel features from intensity bbox rescaled to 30,30
             # pix_val_array = get_pixel_feats(intensity_im,expanded_bbox)        
             # feature_dict.update({'pixval'+str(i):pix_val_array[i] for i in range(0,len(pix_val_array))})
-            
+
+            # # Histogram of gradient features
+#            ht_start = time.time()
+            hog_array = calc_hog(int_bbox)
+            feature_dict.update({'hog'+str(i):hog_array[i] for i in range(0,len(hog_array))})
+#            print(time.time() - ht_start)
             # # log, sqrt, and sq of all existing features
             # feature_dict = add_log_sqrt_sq(feature_dict)
-
+            #print(feature_dict.keys())
+            #print(feature_dict.values())
             colnames = ['id','class'] + feature_dict.keys()
-            
             if create_df_flag:
                 feature_df = pd.DataFrame(columns = colnames)
                 create_df_flag = False
-                
-            feature_df.loc[df_rownum,colnames] = [tile_id + "-" + str(i+1),0] + \
-                                         feature_dict.values()
+
+            feature_df.loc[df_rownum,colnames] = [tile_id + "-" + str(i+1),0] + feature_dict.values()
             df_rownum += 1
+#            print(time.time() - ft_start)
+            
 
     valid = not create_df_flag
     if valid:

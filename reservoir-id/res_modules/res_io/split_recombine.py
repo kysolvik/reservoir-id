@@ -20,7 +20,8 @@ def split_raster(in_tif,out_dir,out_prefix,tile_size_x,tile_size_y,
         command_list = []
         for i in range(0, xsize, (tile_size_x-overlap_size)):
                 for j in range(0, ysize, (tile_size_y-overlap_size)):
-                        com_string = "gdal_translate -q -of GTIFF -srcwin " + \
+                        com_string = "gdal_translate -co 'COMPRESS=LZW' "+ \
+                                     "-q -of GTIFF -srcwin " + \
                                      str(i) + ", " + str(j) + ", " + \
                                      str(tile_size_x) + ", " \
                                      + str(tile_size_y) \
