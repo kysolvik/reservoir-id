@@ -86,9 +86,9 @@ def tile_feat_calc(tile,q):
 def prop_csv_writer(q):
     while 1:
         m = q.get()
-        if m == 'kill':
+        if isinstance(m,basestring) and m == 'kill':
+            print("done!")
             break
-        
         # Append to csv
         if not os.path.isfile(prop_csv_outpath):
             m.to_csv(prop_csv_outpath, mode='w',
