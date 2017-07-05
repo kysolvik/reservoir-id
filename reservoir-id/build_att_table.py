@@ -26,6 +26,7 @@ import math
 import time
 import gc
 import os
+import multiprocessing as mp
 
 from res_modules.add_features import calc_feats, find_training
 from res_modules.res_io import read_write, split_recombine
@@ -53,10 +54,54 @@ prop_list_get = ['area','convex_area','eccentricity',
                  'weighted_moments_normalized','weighted_moments_hu']
 #===============================================================================
 
-
-def main():
-
+# Given tileid, run feature calculations
+def tile_feat_calc(tile,q):
     
+    wat_im_path = tile_dir+"/water/water_"+tile+".tif"
+    intensity_im_path = tile_dir+"/intensity/intensity_"+tile+".tif"
+    labeled_out_path = tile_dir+"/labeled/labeled_"+tile+".tif"
+
+    # Check if there are any water objects before calculating features
+    wat_im,foo = read_write.read_image(wat_im_path)
+    if (wat_im.max()>0):
+        valid, feature_dataframe = calc_feats.shape_feats(wat_im_path,intensity_im_path,
+                                                          labeled_out_path,prop_list_get)
+        if valid:
+            # Find training examples
+            pos_ids,neg_ids = find_training.training_ids(pos_training_csv,
+                                                         neg_training_csv,
+                                                         labeled_out_path)
+
+            # Identify training examples in dataframe
+            feature_dataframe.loc[feature_dataframe['id'].
+                                  isin([tile + "-" + str(i) for i in pos_ids]),
+                                  'class'] = 2
+            feature_dataframe.loc[feature_dataframe['id'].
+                                  isin([tile + "-" + str(i) for i in neg_ids]),
+                                  'class'] = 1
+            q.put(feature_dataframe)
+    return()
+
+# Take tasks from q and write to csv
+def prop_csv_writer(q):
+    while 1:
+        m = q.get()
+        if isinstance(m,basestring) and m == 'kill':
+            print("done!")
+            break
+        # Append to csv
+        if not os.path.isfile(prop_csv_outpath):
+            m.to_csv(prop_csv_outpath, mode='w',
+                      header=True, index=False)
+        else:
+            m.to_csv(prop_csv_outpath, mode='a',
+                      header=False, index=False)
+    return()
+    
+def main():
+    manager = mp.Manager()
+    q = manager.Queue()
+    pool = mp.Pool(mp.cpu_count() - 1)
     # Split tifs
     if split:
         split_recombine.split_raster(wat_tif,tile_dir+"/water","water_",tile_size_x,tile_size_y,
@@ -83,43 +128,22 @@ def main():
     if not os.path.exists(prop_csv_dir):
         os.makedirs(prop_csv_dir)
                 
-    # Calculate features for each tile
-    create_csv = True
+    ### Calculate features for each tile
+    # First start listener
+    watcher = pool.apply_async(prop_csv_writer, (q,))
+    # Start workers
+    jobs = []
     for tile in tile_ids:
-        print(tile)
-        
-        wat_im_path = tile_dir+"/water/water_"+tile+".tif"
-        intensity_im_path = tile_dir+"/intensity/intensity_"+tile+".tif"
-        labeled_out_path = tile_dir+"/labeled/labeled_"+tile+".tif"
+        job = pool.apply_async(tile_feat_calc,(tile,q))
+        jobs.append(job)
 
-        # Check if there are any water objects before calculating features
-        wat_im,foo = read_write.read_image(wat_im_path)
-        if (wat_im.max()>0):
-            valid, feature_dataframe = calc_feats.shape_feats(wat_im_path,intensity_im_path,
-                                                labeled_out_path,prop_list_get)
-            if valid:
-                # Find training examples
-                pos_ids,neg_ids = find_training.training_ids(pos_training_csv,
-                                                             neg_training_csv,
-                                                             labeled_out_path)
+    # collect results from the workers through the pool result queue
+    for job in jobs:
+        job.get()
 
-                # Identify training examples in dataframe
-                feature_dataframe.loc[feature_dataframe['id'].
-                                      isin([tile + "-" + str(i) for i in pos_ids]),
-                                      'class'] = 2
-                feature_dataframe.loc[feature_dataframe['id'].
-                                      isin([tile + "-" + str(i) for i in neg_ids]),
-                                      'class'] = 1
-        
-                # Append to csv
-                if create_csv:
-                    feature_dataframe.to_csv(prop_csv_outpath, mode='w',
-                                             header=True, index=False)
-                    create_csv = False
-                else: 
-                    feature_dataframe.to_csv(prop_csv_outpath, mode='a',
-                                             header=False, index=False)
-        
+    # Now that we are done, kill the listener
+    q.put('kill')
+    pool.close()
     return()
 
 if __name__ == '__main__':

@@ -28,6 +28,9 @@ acut_small = int(sys.argv[2]) # Ignores regions smaller. Recommend 2-4 (pixels)
 num_trees = int(sys.argv[3])
 classifier_pkl = sys.argv[4]
 
+# Change to true if you want to print importances
+print_importance=True
+
 def main():
         # Set any attributes to exclude for this run
         exclude_att_patterns = []
@@ -51,8 +54,9 @@ def main():
     
         (ds_y,ds_x) = dataset_acut.shape
         print(ds_y,ds_x)
-
+        
         # Convert dataset to array
+        feature_names = dataset_acut.columns[2:]
         array = dataset_acut.values
         X = array[:,2:ds_x].astype(float)
         Y = array[:,1].astype(int)
@@ -67,7 +71,7 @@ def main():
 
         # Separate test data
         test_size = 0.2
-        seed = 7
+        seed = 5
         X_train, X_test, Y_train, Y_test = model_selection.train_test_split(
                 X_scaled_classified, Y_classified, test_size=test_size,
                 random_state=seed)
@@ -77,11 +81,11 @@ def main():
 
         # Spot Check Algorithms
         models = []
-        models.append(('RF10',RandomForestClassifier(n_estimators=10)))
-        models.append(('RF64',RandomForestClassifier(n_estimators=64)))
-        models.append(('RF80',RandomForestClassifier(n_estimators=80)))
-        models.append(('RF100',RandomForestClassifier(n_estimators=100)))
-        models.append(('RF120',RandomForestClassifier(n_estimators=120)))
+        models.append(('RF10',RandomForestClassifier(n_estimators=10,n_jobs = 4)))
+        # models.append(('RF64',RandomForestClassifier(n_estimators=64)))
+        # models.append(('RF80',RandomForestClassifier(n_estimators=80)))
+        # models.append(('RF100',RandomForestClassifier(n_estimators=100)))
+        # models.append(('RF120',RandomForestClassifier(n_estimators=120)))
               
         # evaluate each model in turn
         results = []
@@ -97,7 +101,7 @@ def main():
 
 
         # Define random forest
-        rf = RandomForestClassifier(n_estimators = num_trees)
+        rf = RandomForestClassifier(n_estimators = num_trees,criterion="gini",n_jobs = 4)
 
         # # Get learning curve for random forest
         # kfold = model_selection.KFold(n_splits=10, random_state=seed)
@@ -109,9 +113,20 @@ def main():
 
         # Make predictions on test dataset
         rf.fit(X_train, Y_train)
-        print('Feature Importance')
-        print(dataset_acut.columns[2:])
-        print(rf.feature_importances_)
+
+        # Get importances
+        if print_importance:
+                importances = rf.feature_importances_
+                std = np.std([tree.feature_importances_ for tree in rf.estimators_],
+                             axis=0)
+                indices = np.argsort(importances)[::-1]
+
+                # Print the feature ranking
+                print("Feature ranking:")
+                for f in range(X_train.shape[1]):
+                        print("%d. %s (%f)" % (f + 1, feature_names[f], importances[indices[f]]))
+
+        
         # For training accuracy
         rf_train_predict = rf.predict(X_train)
         
