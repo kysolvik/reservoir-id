@@ -3,17 +3,7 @@
 """
 @authors: Kylen Solvik
 Date Create: 3/8/17
-- Builds attribute table for reservoir classification with shape descriptors
-and INTENSITY values within contour
-- Arguments:
-1) wat_tif_path: Path to output from grow_shrink.py. \
-   Image of opened/closed water objects.
-2) intensity_tif_path: Path to INTENSITY file 
-3) training_csv_dir:
-4) prop_csv_outpath: Attribute table for machine learning
-5) cont_csv_outpath: csv containing contour IDs and shapes. Needed for plotting 
-classification results
-
+- Builds attribute table for reservoir classification
 """
 
 import sys
@@ -27,20 +17,39 @@ import time
 import gc
 import os
 import multiprocessing as mp
+import argparse
 
 from res_modules.add_features import calc_feats, find_training
 from res_modules.res_io import read_write, split_recombine
 
 #===============================================================================
-# Get command line arguments
-wat_tif = sys.argv[1]
-intensity_tif = sys.argv[2]
-tile_dir = sys.argv[3]
-split = (sys.argv[4] == "True")
-pos_training_csv = sys.argv[5]
-neg_training_csv = sys.argv[6]
-prop_csv_outpath = sys.argv[7]
+# Parse command line args
+parser = argparse.ArgumentParser(description='Build attribute table for water objects.')
+parser.add_argument('water_tif',
+                    help='Path to black and white water/non-water tif',
+                    type=str)
+parser.add_argument('intensity_tif',
+                    help='Path to intensity image. Usualy NDVI.',
+                    type=str)
+parser.add_argument('tile_dir',
+                    help='Path to directory where computed tiles will be stored.',
+                    type=str)
+parser.add_argument('training_csv',
+                    help='Path to training csv.',
+                    type=str)
+parser.add_argument('prop_csv_out',
+                    help='Path for output csv with region properties.',
+                    type=str)
+parser.add_argument('--skip_split',
+                    help='Skip splitting step. (Use tiles from a previous run.)',
+                    action='store_true')
+parser.add_argument('--path_prefix',
+                    help='To be placed at beginnings of all other path args',
+                    default='',
+                    type=str)
+args = parser.parse_args()
 
+# Some hard coded variables
 tile_size_x = 8000
 tile_size_y = 8000
 overlap_size = 500
@@ -57,9 +66,9 @@ prop_list_get = ['area','convex_area','eccentricity',
 # Given tileid, run feature calculations
 def tile_feat_calc(tile,q):
     
-    wat_im_path = tile_dir+"/water/water_"+tile+".tif"
-    intensity_im_path = tile_dir+"/intensity/intensity_"+tile+".tif"
-    labeled_out_path = tile_dir+"/labeled/labeled_"+tile+".tif"
+    wat_im_path = args.path_prefix + args.tile_dir + "/water/water_"+tile+".tif"
+    intensity_im_path = args.path_prefix + args.tile_dir+"/intensity/intensity_"+tile+".tif"
+    labeled_out_path = args.path_prefix + args.tile_dir+"/labeled/labeled_"+tile+".tif"
 
     # Check if there are any water objects before calculating features
     wat_im,foo = read_write.read_image(wat_im_path)
@@ -68,8 +77,7 @@ def tile_feat_calc(tile,q):
                                                           labeled_out_path,prop_list_get)
         if valid:
             # Find training examples
-            pos_ids,neg_ids = find_training.training_ids(pos_training_csv,
-                                                         neg_training_csv,
+            pos_ids,neg_ids = find_training.training_ids(args.path_prefix + args.training_csv,
                                                          labeled_out_path)
 
             # Identify training examples in dataframe
@@ -90,11 +98,11 @@ def prop_csv_writer(q):
             print("done!")
             break
         # Append to csv
-        if not os.path.isfile(prop_csv_outpath):
-            m.to_csv(prop_csv_outpath, mode='w',
+        if not os.path.isfile(args.path_prefix + args.prop_csv_out):
+            m.to_csv(args.path_prefix + args.prop_csv_out, mode='w',
                       header=True, index=False)
         else:
-            m.to_csv(prop_csv_outpath, mode='a',
+            m.to_csv(args.path_prefix + args.prop_csv_out, mode='a',
                       header=False, index=False)
     return()
     
@@ -104,15 +112,19 @@ def main():
     pool = mp.Pool(mp.cpu_count() - 1)
     # Split tifs
     if split:
-        split_recombine.split_raster(wat_tif,tile_dir+"/water","water_",tile_size_x,tile_size_y,
-                     overlap_size)
-        print(intensity_tif)
-        split_recombine.split_raster(intensity_tif,tile_dir+"/intensity","intensity_",tile_size_x,tile_size_y,
-                     overlap_size)
+        split_recombine.split_raster(args.path_prefix + args.water_tif,
+                                     args.path_prefix + args.tile_dir+"/water",
+                                     "water_",tile_size_x,tile_size_y,
+                                     overlap_size)
+        print(args.path_prefix + args.intensity_tif)
+        split_recombine.split_raster(args.path_prefix + args.intensity_tif,
+                                     args.path_prefix + args.tile_dir+"/intensity","intensity_",
+                                     tile_size_x,tile_size_y,
+                                     overlap_size)
 
         print("Done with split")
     # Get tile_ids
-    ds = gdal.Open(wat_tif)
+    ds = gdal.Open(args.path_prefix + args.water_tif)
     band = ds.GetRasterBand(1)
     xsize = band.XSize
     ysize = band.YSize
@@ -122,9 +134,9 @@ def main():
             tile_ids.append(str(i) + "_" + str(j)) 
 
     # Create output dirs
-    if not os.path.exists(tile_dir+"/labeled"):
-        os.makedirs(tile_dir+"/labeled")
-    prop_csv_dir = os.path.dirname(prop_csv_outpath)
+    if not os.path.exists(args.path_prefix + args.tile_dir + "/labeled"):
+        os.makedirs(args.path_prefix + args.tile_dir + "/labeled")
+    prop_csv_dir = os.path.dirname(args.path_prefix + args.prop_csv_out)
     if not os.path.exists(prop_csv_dir):
         os.makedirs(prop_csv_dir)
                 
