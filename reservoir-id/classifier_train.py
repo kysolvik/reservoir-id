@@ -21,23 +21,38 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
 import numpy as np
 import sys
+import argparse
 
-# Arguments
-in_csv_path = sys.argv[1]
-acut_small = int(sys.argv[2]) # Ignores regions smaller. Recommend 2-4 (pixels)
-num_trees = int(sys.argv[3])
-classifier_pkl = sys.argv[4]
-
-# Change to true if you want to print importances
-print_importance=True
+# Parse arguments
+parser = argparse.ArgumentParser(description='Train Random Forest classifier.')
+parser.add_argument('prop_csv',
+                    help='Path to attribute table (from build_att_table.py).',
+                    type=str)
+parser.add_argument('rf_pkl',
+                    help='Path to save random forest model as .pkl.',
+                    type=str)
+parser.add_argument('--ntrees',
+                    help='Number of trees for random forest',
+                    type=int,default=200)
+parser.add_argument('--area_lowbound',
+                    help='Lower area bound. All regions <= in size will be ignored',
+                    default=2,
+                    type=int)
+parser.add_argument('--print_imp',
+                    help='Print variable importances',
+                    action='store_true')
+parser.add_argument('--path_prefix',
+                    help='To be placed at beginnings of all other path args',
+                    type=str,default='')
+args = parser.parse_args()
 
 def main():
         # Set any attributes to exclude for this run
         exclude_att_patterns = []
 
         # Load dataset
-        dataset = pd.read_csv(in_csv_path,header=0)
-        dataset_acut = dataset.loc[dataset['area'] > acut_small]
+        dataset = pd.read_csv(args.path_prefix + args.prop_csv,header=0)
+        dataset_acut = dataset.loc[dataset['area'] > args.area_lowbound]
 
         # Exclude attributes matching user input patterns, or if they are all nans
         exclude_atts = []
@@ -101,7 +116,7 @@ def main():
 
 
         # Define random forest
-        rf = RandomForestClassifier(n_estimators = num_trees,criterion="gini",n_jobs = 4)
+        rf = RandomForestClassifier(n_estimators = args.ntrees,criterion="gini",n_jobs = 4)
 
         # # Get learning curve for random forest
         # kfold = model_selection.KFold(n_splits=10, random_state=seed)
@@ -115,7 +130,7 @@ def main():
         rf.fit(X_train, Y_train)
 
         # Get importances
-        if print_importance:
+        if args.print_imp:
                 importances = rf.feature_importances_
                 std = np.std([tree.feature_importances_ for tree in rf.estimators_],
                              axis=0)
@@ -138,9 +153,9 @@ def main():
         print(classification_report(Y_test, rf_predictions))
                 
         # Export classifier trained on full data set
-        rf_full = RandomForestClassifier(n_estimators = num_trees)
+        rf_full = RandomForestClassifier(n_estimators = args.ntrees)
         rf_full.fit(X_scaled_classified,Y_classified)
-        joblib.dump(rf, classifier_pkl)
+        joblib.dump(rf, args.path_prefix + args.rf_pkl)
         
 if __name__ == '__main__':
         main()
