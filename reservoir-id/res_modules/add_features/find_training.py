@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
+import pandas as pd
 
 from ..res_io import read_write
 
@@ -11,15 +12,16 @@ def get_train_indices(coords,geotrans):
     yx_indices = np.stack([y_indices,x_indices],axis=1)
     return(yx_indices)
 
-# Inputs: paths to csvs of positive and negative training points, a labeled image
+# Inputs: paths to csv of positive and negative training points, a labeled image
 # Output: array of region IDs that are positive and negative
-def training_ids(pos_csv_path,neg_csv_path,labeled_image_path):
+def training_ids(train_csv_path,labeled_image_path):
     labeled_image,geotrans = read_write.read_image(labeled_image_path)
 
     ysize,xsize = labeled_image.shape
-    
-    pos_coords = np.genfromtxt(pos_csv_path,delimiter=",",skip_header=1)[:,0:2]
-    neg_coords = np.genfromtxt(neg_csv_path,delimiter=",",skip_header=1)[:,0:2]
+
+    train_df = pd.read_csv(train_csv_path)
+    pos_coords = train_df.loc[train_df['Class']==1].as_matrix(['X','Y'])
+    neg_coords = train_df.loc[train_df['Class']==0].as_matrix(['X','Y'])
     
     pos_indices = get_train_indices(pos_coords,geotrans)
     neg_indices = get_train_indices(neg_coords,geotrans)
