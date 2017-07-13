@@ -34,6 +34,10 @@ parser.add_argument('--water_class',
 parser.add_argument('--no_morph',
                     action="store_true",
                     help='Skip morphology, output unmodifed water objects.')
+parser.add_argument('--path_prefix',
+                    help='To be placed at beginnings of all other path args',
+                    default='',
+                    type=str)
 args = parser.parse_args()
 
 def grow_shrink(lc_array):
@@ -50,7 +54,7 @@ def grow_shrink(lc_array):
 
 def main():
     # Read
-    lc,geotrans = read_write.read_image(args.landcover_tif)
+    lc,geotrans = read_write.read_image(args.path_prefix + args.landcover_tif)
     print(lc)
     # Grow/shrink
     if not args.no_morph:
@@ -62,7 +66,8 @@ def main():
     print(lc.nbytes)
     
     # Write out to geotiff
-    read_write.write_image(lc,args.landcover_tif,args.out_tif,gdal.GDT_Byte)
+    read_write.write_image(lc,args.path_prefix + args.landcover_tif,
+                           args.path_prefix + args.out_tif,gdal.GDT_Byte)
 
     
 if __name__ == '__main__':
