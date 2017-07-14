@@ -10,11 +10,25 @@ from os import path
 import pandas as pd
 import multiprocessing as mp
 from functools import partial
+import argparse
 
 from res_modules.res_io import read_write, split_recombine
 
-classified_csv_path = sys.argv[1]
-tile_dir_path = sys.argv[2]
+# Parse arguments
+parser = argparse.ArgumentParser(description='Draw classification results.',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('class_csv',
+                    help='Path to attribute table (from build_att_table.py).',
+                    type=str)
+parser.add_argument('tile_dir',
+                    help='Path to tile directory where image tiles are stored.',
+                    type=str)
+parser.add_argument('--path_prefix',
+                    help='To be placed at beginnings of all other path args',
+                    type=str,default='')
+args = parser.parse_args()
+
+# Hard coded, which column to look for class prediction?
 predict_column = 'clf_pred'
 
 def draw_single_tile(tile,tile_ids_all,reg_nums,predictions,tile_dir):
@@ -23,8 +37,7 @@ def draw_single_tile(tile,tile_ids_all,reg_nums,predictions,tile_dir):
 
     pos_temp_val = 3
     neg_temp_val = 2
-    #wat_im_path = tile_dir + "/" + "water/water_" + tile + ".tif"
-    #wat_im, foo = read_write.read_image(wat_im_path)
+
     labeled_im_path = tile_dir + "/" + "labeled/labeled_" + tile + ".tif"
     labeled_im, foo = read_write.read_image(labeled_im_path)
     wat_im = np.copy(labeled_im)
@@ -55,15 +68,13 @@ def draw_classified(classified_csv,tile_dir):
     partial_draw = partial(draw_single_tile,tile_ids_all=tile_ids_all,
                            reg_nums=reg_nums,predictions=predictions,
                            tile_dir=tile_dir)
-    pool = mp.Pool(mp.cpu_count()-2)
+    pool = mp.Pool(mp.cpu_count()-1)
     pool.map(partial_draw,tile_ids_unique)
     pool.close()
     pool.join()
-    # Combine them back together
-    # split_recombine.recombine_raster(tile_dir + "/classified","classified_",output_tif)
 
 def main():
-    draw_classified(classified_csv_path,tile_dir_path)
+    draw_classified(args.path_prefix + args.class_csv,args.path_prefix + args.tile_dir)
     return()
 
 if __name__ == '__main__':
