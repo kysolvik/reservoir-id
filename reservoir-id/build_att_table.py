@@ -24,7 +24,8 @@ from res_modules.res_io import read_write, split_recombine
 
 #===============================================================================
 # Parse command line args
-parser = argparse.ArgumentParser(description='Build attribute table for water objects.')
+parser = argparse.ArgumentParser(description='Build attribute table for water objects.',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('water_tif',
                     help='Path to black and white water/non-water tif',
                     type=str)

@@ -13,7 +13,8 @@ from functools import partial
 import argparse
 
 # Parse input arguments
-parser = argparse.ArgumentParser(description='Creates mosaic of ONLY reservoir objects.')
+parser = argparse.ArgumentParser(description='Creates mosaic of ONLY reservoir objects.',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('classified_im_pattern',
                     help='Pattern for glob to find classified images',
                     type=str)

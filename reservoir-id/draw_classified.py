@@ -15,7 +15,8 @@ import argparse
 from res_modules.res_io import read_write, split_recombine
 
 # Parse arguments
-parser = argparse.ArgumentParser(description='Draw classification results.')
+parser = argparse.ArgumentParser(description='Draw classification results.',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('class_csv',
                     help='Path to attribute table (from build_att_table.py).',
                     type=str)

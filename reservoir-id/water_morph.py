@@ -22,7 +22,8 @@ import argparse
 from res_modules.res_io import read_write
 
 # Parse command line args
-parser = argparse.ArgumentParser(description='Dilate then erode water objects.')
+parser = argparse.ArgumentParser(description='Dilate then erode water objects.',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('landcover_tif',help='Path to landcover tif with water class',
                     type=str)
 parser.add_argument('out_tif',

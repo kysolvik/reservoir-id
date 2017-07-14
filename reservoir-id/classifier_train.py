@@ -24,7 +24,8 @@ import sys
 import argparse
 
 # Parse arguments
-parser = argparse.ArgumentParser(description='Train Random Forest classifier.')
+parser = argparse.ArgumentParser(description='Train Random Forest classifier.',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('prop_csv',
                     help='Path to attribute table (from build_att_table.py).',
                     type=str)
