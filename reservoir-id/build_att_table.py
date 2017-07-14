@@ -157,6 +157,7 @@ def main():
     # Now that we are done, kill the listener
     q.put('kill')
     pool.close()
+    pool.join()
     return()
 
 if __name__ == '__main__':
