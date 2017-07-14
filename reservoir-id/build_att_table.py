@@ -111,7 +111,7 @@ def main():
     q = manager.Queue()
     pool = mp.Pool(mp.cpu_count() - 1)
     # Split tifs
-    if split:
+    if not args.skip_split:
         split_recombine.split_raster(args.path_prefix + args.water_tif,
                                      args.path_prefix + args.tile_dir+"/water",
                                      "water_",tile_size_x,tile_size_y,
