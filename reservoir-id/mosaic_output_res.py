@@ -39,7 +39,7 @@ def resonly(tile_path, res_class):
     return()
 
 def combine_classified(file_pattern,res_class,output_vrt):
-    partial_resonly = partial(resonly, res_class = res_class, overwrite = overwrite_resonly)
+    partial_resonly = partial(resonly, res_class = res_class)
     pool = mp.Pool(mp.cpu_count()-2)
     pool.map(partial_resonly,glob.glob(file_pattern))
     pool.close()
@@ -52,7 +52,7 @@ def combine_classified(file_pattern,res_class,output_vrt):
 
 def main():
     combine_classified(args.path_prefix + args.classified_im_pattern,
-                       args.reservir_class,
+                       args.reservoir_class,
                        args.path_prefix + args.res_mosaic_vrt)
     return()
 
