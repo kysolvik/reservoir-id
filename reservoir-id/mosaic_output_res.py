@@ -23,11 +23,12 @@ parser.add_argument('res_mosaic_vrt',
                     type=str)
 parser.add_argument('--reservoir_class',
                     help='Integer for reservoir class in classified images',
-                    type=int,default=3)
+                    type=str,default=3)
 parser.add_argument('--path_prefix',
                     help='To be placed at beginnings of all other path args',
                     type=str,default='')
 args = parser.parse_args()
+
 
 def resonly(tile_path, res_class):
     if "resonly" not in tile_path:
@@ -39,20 +40,22 @@ def resonly(tile_path, res_class):
     return()
 
 def combine_classified(file_pattern,res_class,output_vrt):
-    partial_resonly = partial(resonly, res_class = res_class, overwrite = overwrite_resonly)
+    partial_resonly = partial(resonly, res_class = res_class)
     pool = mp.Pool(mp.cpu_count()-2)
     pool.map(partial_resonly,glob.glob(file_pattern))
     pool.close()
     pool.join()
 
     # Build vrt
-    resonly_pattern = path.dirname(class_pattern) + "/*_resonly.tif"
+    resonly_pattern = path.dirname(args.classified_im_pattern) + "/*_resonly.tif"
     os.system("gdalbuildvrt " + output_vrt + " " + resonly_pattern)
+    os.system('gdal_translate -co "COMPRESS=LZW"' + output_vrt +
+              os.path.splitext(output_vrt)[0] + '.tif')
     return()
 
 def main():
     combine_classified(args.path_prefix + args.classified_im_pattern,
-                       args.reservir_class,
+                       args.reservoir_class,
                        args.path_prefix + args.res_mosaic_vrt)
     return()
 
