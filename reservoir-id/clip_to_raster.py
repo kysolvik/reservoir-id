@@ -35,9 +35,15 @@ parser.add_argument('clip_type',
 parser.add_argument('clip_cutoff',
                     help='Keep (pos) or throw out (neg) values below this.',
                     type=int)
+parser.add_argument('area_max',
+                    help='Maximum area reservoir to keep, in # of pixels.',
+                    type=int),
 parser.add_argument('output_prefix',
                     help='Prefix for output tifs. If dir, must end with /',
                     type=str)
+parser.add_argument('--noclip',
+                    help='No clipping, just area filter',
+                    action='store_true')
 parser.add_argument('--temp_dir',
                     help='Define temporary directory',
                     default=os.path.expanduser('~/temp/'),
@@ -102,12 +108,17 @@ def clip_by_landuse(class_tile_path):
     
     # Clip outputs
     for i in range(0,len(plist)):
-        if args.clip_type=='pos':
-            if plist[i].min_intensity > args.clip_cutoff:
+        if not args.noclip:
+            print(args.noclip)
+            if args.clip_type=='pos':
+                if plist[i].min_intensity > args.clip_cutoff:
+                    out_im[class_labeled == plist[i].label] = 0
+            elif args.clip_type=='neg':
+                if plist[i].min_intensity <= args.clip_cutoff:
+                    out_im[class_labeled == plist[i].label] = 0
+        if plist[i].area >= args.area_max:
                 out_im[class_labeled == plist[i].label] = 0
-        elif args.clip_type=='neg':
-            if plist[i].min_intensity <= args.clip_cutoff:
-                out_im[class_labeled == plist[i].label] = 0
+
 
     # Write image out
     output_path = args.output_prefix + os.path.basename(class_tile_path)
