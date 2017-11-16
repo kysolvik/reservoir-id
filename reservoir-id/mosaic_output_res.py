@@ -23,7 +23,7 @@ parser.add_argument('res_mosaic_vrt',
                     type=str)
 parser.add_argument('--reservoir_class',
                     help='Integer for reservoir class in classified images',
-                    type=str,default=3)
+                    type=str,default='3')
 parser.add_argument('--path_prefix',
                     help='To be placed at beginnings of all other path args',
                     type=str,default='')
@@ -49,8 +49,8 @@ def combine_classified(file_pattern,res_class,output_vrt):
     # Build vrt
     resonly_pattern = path.dirname(args.classified_im_pattern) + "/*_resonly.tif"
     os.system("gdalbuildvrt " + output_vrt + " " + resonly_pattern)
-    os.system('gdal_translate -co "COMPRESS=LZW"' + output_vrt +
-              os.path.splitext(output_vrt)[0] + '.tif')
+    os.system('gdal_translate -co "COMPRESS=LZW" ' + output_vrt + ' ' + 
+              path.splitext(output_vrt)[0] + '.tif')
     return()
 
 def main():
