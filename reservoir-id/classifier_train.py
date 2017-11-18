@@ -22,6 +22,7 @@ from sklearn.externals import joblib
 import numpy as np
 import sys
 import argparse
+import os
 
 # Parse arguments
 parser = argparse.ArgumentParser(description='Train Random Forest classifier.',
@@ -47,12 +48,23 @@ parser.add_argument('--path_prefix',
                     type=str,default='')
 args = parser.parse_args()
 
+def select_training_obs(full_csv_path):
+    """Takes full csv and selects only the training observations.
+    Writes out to csv for further use"""
+    training_csv_path = full_csv_path.replace('.csv','_trainonly.csv')
+    if not os.path.isfile(training_csv_path):
+        dataset = pd.read_csv(full_csv_path,header=0)
+        training_dataset = dataset.loc[dataset['class'] > 0]
+        training_dataset.to_csv(training_csv_path,header=True,index=False)
+    return(training_csv_path)
+
 def main():
         # Set any attributes to exclude for this run
         exclude_att_patterns = []
 
         # Load dataset
-        dataset = pd.read_csv(args.path_prefix + args.prop_csv,header=0)
+        training_csv = select_training_obs(args.path_prefix + args.prop_csv)
+        dataset = pd.read_csv(training_csv,header=0)
         dataset_acut = dataset.loc[dataset['area'] > args.area_lowbound]
 
         # Exclude attributes matching user input patterns, or if they are all nans
@@ -80,16 +92,12 @@ def main():
         # Set nans to 0
         X = np.nan_to_num(X)
 
-        # Scale!
-        X_scaled = X # preprocessing.scale(X)
-        X_scaled_classified = X_scaled[Y > 0]
-        Y_classified = Y[Y > 0]
 
         # Separate test data
         test_size = 0.2
         seed = 5
         X_train, X_test, Y_train, Y_test = model_selection.train_test_split(
-                X_scaled_classified, Y_classified, test_size=test_size,
+                X, Y, test_size=test_size,
                 random_state=seed)
 
         # Test options and evaluation metric
@@ -155,7 +163,7 @@ def main():
                 
         # Export classifier trained on full data set
         rf_full = RandomForestClassifier(n_estimators = args.ntrees)
-        rf_full.fit(X_scaled_classified,Y_classified)
+        rf_full.fit(X,Y)
         joblib.dump(rf, args.path_prefix + args.rf_pkl)
         
 if __name__ == '__main__':
