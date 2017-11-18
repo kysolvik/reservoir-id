@@ -23,6 +23,7 @@ import numpy as np
 import sys
 import argparse
 import os
+import xgboost as xgb
 
 # Parse arguments
 parser = argparse.ArgumentParser(description='Train Random Forest classifier.',
@@ -88,10 +89,10 @@ def main():
         array = dataset_acut.values
         X = array[:,2:ds_x].astype(float)
         Y = array[:,1].astype(int)
+        Y = Y - 1 # Convert from 1s and 2s to 0-1
 
         # Set nans to 0
         X = np.nan_to_num(X)
-
 
         # Separate test data
         test_size = 0.2
@@ -100,71 +101,31 @@ def main():
                 X, Y, test_size=test_size,
                 random_state=seed)
 
-        # Test options and evaluation metric
-        scoring = 'accuracy'
-
-        # Spot Check Algorithms
-        models = []
-        models.append(('RF10',RandomForestClassifier(n_estimators=10,n_jobs = 4)))
-        # models.append(('RF64',RandomForestClassifier(n_estimators=64)))
-        # models.append(('RF80',RandomForestClassifier(n_estimators=80)))
-        # models.append(('RF100',RandomForestClassifier(n_estimators=100)))
-        # models.append(('RF120',RandomForestClassifier(n_estimators=120)))
-              
-        # evaluate each model in turn
-        results = []
-        names = []
-        for name, model in models:
-                kfold = model_selection.KFold(n_splits=10, random_state=seed)
-                cv_results = model_selection.cross_val_score(model, X_train, Y_train,
-                                                             cv=kfold, scoring=scoring)
-                results.append(cv_results)
-                names.append(name)
-                msg = "%s: %f (%f)" % (name, cv_results.mean(), cv_results.std())
-                print(msg)
-
-
-        # Define random forest
-        rf = RandomForestClassifier(n_estimators = args.ntrees,criterion="gini",n_jobs = 4)
-
-        # # Get learning curve for random forest
-        # kfold = model_selection.KFold(n_splits=10, random_state=seed)
-        # t_sizes, t_scores, cv_scores = model_selection.learning_curve(rf, X_train, Y_train, cv=kfold, scoring=scoring,train_sizes=np.array([ 0.1, 0.2, 0.3, 0.4,.5,.6,.7,.8,.9, 1. ]))
-        # t_scores_mean = np.mean(t_scores,axis=1)
-        # cv_scores_mean = np.mean(cv_scores,axis=1)
-        # plt.plot(t_sizes,t_scores_mean,'r--',t_sizes,cv_scores_mean,'b--')
-        # plt.show()
-
-        # Make predictions on test dataset
-        rf.fit(X_train, Y_train)
-
-        # Get importances
-        if args.print_imp:
-                importances = rf.feature_importances_
-                std = np.std([tree.feature_importances_ for tree in rf.estimators_],
-                             axis=0)
-                indices = np.argsort(importances)[::-1]
-
-                # Print the feature ranking
-                print("Feature ranking:")
-                for f in range(X_train.shape[1]):
-                        print("%d. %s (%f)" % (f + 1, feature_names[f], importances[indices[f]]))
-
+        # Convert data to xgboost matrices
+        d_train = xgb.DMatrix(X_train,label=Y_train)
+        d_test = xgb.DMatrix(X_test,label=Y_test)
         
-        # For training accuracy
-        rf_train_predict = rf.predict(X_train)
-        
-        print("Training acc = " + str(accuracy_score(Y_train,rf_train_predict)))
+        # Define classifier
+        param = {'max_depth': 5, 'eta': 0.1, 'gamma':2,'silent': 1, 'objective': 'binary:logistic'}
+        param['nthread'] = 4
+        param['eval_metric'] = 'auc'
+        evallist=[(d_test,'eval'),(d_train,'train')]
+
+        num_round=100
+        bst = xgb.train(param,d_train,num_round,evallist) 
+
         # For test accuracy
-        rf_predictions = rf.predict(X_test)
-        print("RF CV acc = " + str(accuracy_score(Y_test, rf_predictions)))
-        print(confusion_matrix(Y_test, rf_predictions))
-        print(classification_report(Y_test, rf_predictions))
+        # Make predictions on test dataset
+        bst_log_preds = bst.predict(d_test)
+        bst_preds = np.round(bst_log_preds)
+        print("Xgboost Test acc = " + str(accuracy_score(Y_test, bst_preds)))
+        print(confusion_matrix(Y_test, bst_preds))
+        print(classification_report(Y_test, bst_preds))
                 
-        # Export classifier trained on full data set
-        rf_full = RandomForestClassifier(n_estimators = args.ntrees)
-        rf_full.fit(X,Y)
-        joblib.dump(rf, args.path_prefix + args.rf_pkl)
+#         # Export classifier trained on full data set
+#         rf_full = RandomForestClassifier(n_estimators = args.ntrees)
+#         rf_full.fit(X,Y)
+#         joblib.dump(rf, args.path_prefix + args.rf_pkl)
         
 if __name__ == '__main__':
         main()
