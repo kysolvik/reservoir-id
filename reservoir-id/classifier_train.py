@@ -10,8 +10,6 @@ Date Create: 3/17/17
 
 # Load libraries
 import pandas as pd
-from pandas.tools.plotting import scatter_matrix
-import matplotlib.pyplot as plt
 from sklearn import model_selection
 from sklearn import preprocessing
 from sklearn.metrics import classification_report
@@ -168,14 +166,17 @@ def main():
 
         # For test accuracy
         # Make predictions on test dataset
-        bst_preds = cv.predict(X_test)
+        bst_preds = cvresult.predict(X_test)
         print("Xgboost Test acc = " + str(accuracy_score(Y_test, bst_preds)))
         print(confusion_matrix(Y_test, bst_preds))
         print(classification_report(Y_test, bst_preds))
+        # Export cv classifier
+        joblib.dump(cvresult, args.path_prefix + args.xgb_pkl + 'cv')         
                 
         # Export classifier trained on full data set
-        joblib.dump(cv, args.path_prefix + args.xgb_pkl + 'cv')         
-        best_params = clf.best_params_
+        best_params = cvresult.params
+        n_est_final = cvresult.best_ntreelimit
+        best_params['n_estimators'] = n_est_final
         xgb_full = xgb.XGBClassifier(best_params)
         xgb_full.fit(X,Y)
         joblib.dump(xgb_full, args.path_prefix + args.xgb_pkl) 
