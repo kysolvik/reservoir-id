@@ -17,8 +17,10 @@ from sklearn import preprocessing
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
+from sklearn.cross_validation import train_test_split
+from sklearn.grid_search import GridSearchCV
+from sklearn.cross_validation import *
 import numpy as np
 import sys
 import argparse
@@ -31,7 +33,7 @@ parser = argparse.ArgumentParser(description='Train Random Forest classifier.',
 parser.add_argument('prop_csv',
                     help='Path to attribute table (from build_att_table.py).',
                     type=str)
-parser.add_argument('rf_pkl',
+parser.add_argument('xgb_pkl',
                     help='Path to save random forest model as .pkl.',
                     type=str)
 parser.add_argument('--ntrees',
@@ -103,29 +105,79 @@ def main():
 
         # Convert data to xgboost matrices
         d_train = xgb.DMatrix(X_train,label=Y_train)
-        d_test = xgb.DMatrix(X_test,label=Y_test)
-        
-        # Define classifier
-        param = {'max_depth': 5, 'eta': 0.1, 'gamma':2,'silent': 1, 'objective': 'binary:logistic'}
-        param['nthread'] = 4
-        param['eval_metric'] = 'auc'
-        evallist=[(d_test,'eval'),(d_train,'train')]
+        # d_test = xgb.DMatrix(X_test,label=Y_test)
+       
+        #----------------------------------------------------------------------
+        # Paramater tuning
 
-        num_round=100
-        bst = xgb.train(param,d_train,num_round,evallist) 
+        # Step 1: Find approximate n_estimators to use
+        early_stop_rounds = 40
+        n_folds = 5
+        xgb_model = xgb.XGBClassifier(
+            learning_rate =0.1,
+            n_estimators=1000,
+            max_depth=5,
+            min_child_weight=1,
+            gamma=0,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            objective= 'binary:logistic',
+            seed=27)
+        xgb_params = xgb_model.get_xgb_params() 
+        cvresult = xgb.cv(xgb_params, d_train, 
+            num_boost_round=xgb_params['n_estimators'], nfold=n_folds,
+            metrics='auc', early_stopping_rounds=early_stop_rounds,
+            )
+        n_est_best = (cvresult.shape[0] - early_stop_rounds)
+        print('Best number of rounds = {}'.format(n_est_best))
+        
+        # Step 2: Tune hyperparameters
+        xgb_model = xgb.XGBClassifier()
+        params = {'max_depth': range(3,10,2),
+                'learning_rate': [0.1],
+                'gamma':[0,0.5,1,2,4],
+                'silent': [1], 
+                'objective': ['binary:logistic'],
+                'n_estimators' : [n_est_best],
+                'subsample' : [0.5, 0.8,1],
+                'min_child_weight' : range(1,6,2),
+                'colsample_bytree':[0.5,0.8,1],
+                }
+        clf = GridSearchCV(xgb_model,params,n_jobs = 1,
+                cv = StratifiedKFold(Y_train,
+                n_folds=5, shuffle=True),
+                scoring = 'roc_auc',
+                verbose = 2,
+                refit = True)
+        clf.fit(X_train,Y_train)
+
+        best_parameters,score,_ = max(clf.grid_scores_,key=lambda x: x[1])
+        print('Raw AUC score:',score)
+        for param_name in sorted(best_parameters.keys()):
+            print("%s: %r" % (param_name, best_parameters[param_name]))
+
+        # Step 3: Decrease learning rate and up the # of trees
+        #xgb_finalcv = XGBClassifier()
+        final_params = clf.best_params_
+        final_params['n_estimators'] = 5000
+        final_params['learning_rate'] = 0.01
+        cvresult = xgb.cv(final_params, d_train, 
+            num_boost_round=final_params['n_estimators'], nfold=n_folds,
+            metrics='auc', early_stopping_rounds=early_stop_rounds,
+            )
 
         # For test accuracy
         # Make predictions on test dataset
-        bst_log_preds = bst.predict(d_test)
-        bst_preds = np.round(bst_log_preds)
+        bst_preds = cv.predict(X_test)
         print("Xgboost Test acc = " + str(accuracy_score(Y_test, bst_preds)))
         print(confusion_matrix(Y_test, bst_preds))
         print(classification_report(Y_test, bst_preds))
                 
-#         # Export classifier trained on full data set
-#         rf_full = RandomForestClassifier(n_estimators = args.ntrees)
-#         rf_full.fit(X,Y)
-#         joblib.dump(rf, args.path_prefix + args.rf_pkl)
-        
+        # Export classifier trained on full data set
+        joblib.dump(cv, args.path_prefix + args.xgb_pkl + 'cv')         
+        best_params = clf.best_params_
+        xgb_full = xgb.XGBClassifier(best_params)
+        xgb_full.fit(X,Y)
+        joblib.dump(xgb_full, args.path_prefix + args.xgb_pkl) 
 if __name__ == '__main__':
         main()
