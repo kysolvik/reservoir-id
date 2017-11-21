@@ -112,7 +112,7 @@ def main():
         early_stop_rounds = 40
         n_folds = 5
         xgb_model = xgb.XGBClassifier(
-            learning_rate =0.1,
+            learning_rate =0.5,
             n_estimators=1000,
             max_depth=5,
             min_child_weight=1,
@@ -131,15 +131,16 @@ def main():
         
         # Step 2: Tune hyperparameters
         xgb_model = xgb.XGBClassifier()
-        params = {'max_depth': range(3,10,2),
-                'learning_rate': [0.1],
-                'gamma':[0,0.5,1,2,4],
+
+        params = {'max_depth': range(5,10,2),
+                'learning_rate': [0.5],
+                'gamma':[0,0.5,1,2],
                 'silent': [1], 
                 'objective': ['binary:logistic'],
                 'n_estimators' : [n_est_best],
-                'subsample' : [0.5, 0.8,1],
+                'subsample' : [0.5, 0.75,1],
                 'min_child_weight' : range(1,6,2),
-                'colsample_bytree':[0.5,0.8,1],
+                'colsample_bytree':[0.5,0.75,1],
                 }
         clf = GridSearchCV(xgb_model,params,n_jobs = 1,
                 cv = StratifiedKFold(Y_train,
@@ -156,17 +157,22 @@ def main():
 
         # Step 3: Decrease learning rate and up the # of trees
         #xgb_finalcv = XGBClassifier()
-        final_params = clf.best_params_
-        final_params['n_estimators'] = 5000
-        final_params['learning_rate'] = 0.01
-        cvresult = xgb.cv(final_params, d_train, 
-            num_boost_round=final_params['n_estimators'], nfold=n_folds,
+        tuned_params = clf.best_params_
+        tuned_params['n_estimators'] = 10000
+        tuned_params['learning_rate'] = 0.01
+        cvresult = xgb.cv(tuned_params, d_train, 
+            num_boost_round=tuned_params['n_estimators'], nfold=n_folds,
             metrics='auc', early_stopping_rounds=early_stop_rounds,
             )
 
-        # For test accuracy
-        # Make predictions on test dataset
-        bst_preds = cvresult.predict(X_test)
+        # Train model with cv results and predict on test set For test accuracy
+        n_est_final = int((cvresult.shape[0] - early_stop_rounds) / (1 - 1 / n_folds))
+        tuned_params['n_estimators'] = n_est_final
+        print(tuned_params)
+        xgb_train = xgb.XGBClassifier()
+        xgb_train.set_params(**tuned_params)
+        xgb_train.fit(X_train,Y_train)
+        bst_preds = xgb_train.predict(X_test)
         print("Xgboost Test acc = " + str(accuracy_score(Y_test, bst_preds)))
         print(confusion_matrix(Y_test, bst_preds))
         print(classification_report(Y_test, bst_preds))
@@ -174,11 +180,10 @@ def main():
         joblib.dump(cvresult, args.path_prefix + args.xgb_pkl + 'cv')         
                 
         # Export classifier trained on full data set
-        best_params = cvresult.params
-        n_est_final = cvresult.best_ntreelimit
-        best_params['n_estimators'] = n_est_final
-        xgb_full = xgb.XGBClassifier(best_params)
+        xgb_full = xgb.XGBClassifier()
+        xgb_full.set_params(**tuned_params)
         xgb_full.fit(X,Y)
         joblib.dump(xgb_full, args.path_prefix + args.xgb_pkl) 
+
 if __name__ == '__main__':
         main()
