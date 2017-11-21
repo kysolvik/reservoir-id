@@ -27,7 +27,7 @@ parser.add_argument('prop_csv',
                     help='Path to attribute table (from build_att_table.py).',
                     type=str)
 parser.add_argument('xgb_pkl',
-                    help='Path to load xgb model as .pkl.',
+                    help='Path to pkl with xgb model.',
                     type=str)
 parser.add_argument('class_csv_out',
                     help='Path for output classified csv',
@@ -74,7 +74,7 @@ def main():
         X = np.nan_to_num(X)
 
         # Export classifier trained on full data set
-        clf = joblib.load(args.path_prefix + args.rf_pkl)
+        clf = joblib.load(args.path_prefix + args.xgb_pkl)
         clf_pred = clf.predict(X)
         dataset_out = dataset_acut
         dataset_out["clf_pred"] = clf_pred
