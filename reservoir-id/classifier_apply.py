@@ -14,8 +14,8 @@ Date Create: 5/27/17
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn import preprocessing
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
+import xgboost as xgb
 import numpy as np
 import sys
 import argparse
@@ -26,8 +26,8 @@ parser = argparse.ArgumentParser(description='Apply Random Forest classifier to 
 parser.add_argument('prop_csv',
                     help='Path to attribute table (from build_att_table.py).',
                     type=str)
-parser.add_argument('rf_pkl',
-                    help='Path to save random forest model as .pkl.',
+parser.add_argument('xgb_pkl',
+                    help='Path to load xgb model as .pkl.',
                     type=str)
 parser.add_argument('class_csv_out',
                     help='Path for output classified csv',
@@ -73,16 +73,13 @@ def main():
         # Set nans to 0
         X = np.nan_to_num(X)
 
-        # Scale!
-        X_scaled = X #preprocessing.scale(X)
-
         # Export classifier trained on full data set
         clf = joblib.load(args.path_prefix + args.rf_pkl)
-        clf_pred = clf.predict(X_scaled)
+        clf_pred = clf.predict(X)
         dataset_out = dataset_acut
         dataset_out["clf_pred"] = clf_pred
-        print(str(sum(clf_pred == 1)) + " classified as positive")
-        print(str(sum(clf_pred == 2)) + " classified as negative")
+        print(str(sum(clf_pred == 0)) + " classified as positive")
+        print(str(sum(clf_pred == 1)) + " classified as negative")
         dataset_out.to_csv(args.path_prefix + args.class_csv_out,index=False)
         
 if __name__ == '__main__':
