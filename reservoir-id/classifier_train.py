@@ -10,18 +10,20 @@ Date Create: 3/17/17
 
 # Load libraries
 import pandas as pd
-from pandas.tools.plotting import scatter_matrix
-import matplotlib.pyplot as plt
 from sklearn import model_selection
 from sklearn import preprocessing
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
+from sklearn.cross_validation import train_test_split
+from sklearn.grid_search import GridSearchCV
+from sklearn.cross_validation import *
 import numpy as np
 import sys
 import argparse
+import os
+import xgboost as xgb
 
 # Parse arguments
 parser = argparse.ArgumentParser(description='Train Random Forest classifier.',
@@ -29,7 +31,7 @@ parser = argparse.ArgumentParser(description='Train Random Forest classifier.',
 parser.add_argument('prop_csv',
                     help='Path to attribute table (from build_att_table.py).',
                     type=str)
-parser.add_argument('rf_pkl',
+parser.add_argument('xgb_pkl',
                     help='Path to save random forest model as .pkl.',
                     type=str)
 parser.add_argument('--ntrees',
@@ -47,12 +49,23 @@ parser.add_argument('--path_prefix',
                     type=str,default='')
 args = parser.parse_args()
 
+def select_training_obs(full_csv_path):
+    """Takes full csv and selects only the training observations.
+    Writes out to csv for further use"""
+    training_csv_path = full_csv_path.replace('.csv','_trainonly.csv')
+    if not os.path.isfile(training_csv_path):
+        dataset = pd.read_csv(full_csv_path,header=0)
+        training_dataset = dataset.loc[dataset['class'] > 0]
+        training_dataset.to_csv(training_csv_path,header=True,index=False)
+    return(training_csv_path)
+
 def main():
         # Set any attributes to exclude for this run
         exclude_att_patterns = []
 
         # Load dataset
-        dataset = pd.read_csv(args.path_prefix + args.prop_csv,header=0)
+        training_csv = select_training_obs(args.path_prefix + args.prop_csv)
+        dataset = pd.read_csv(training_csv,header=0)
         dataset_acut = dataset.loc[dataset['area'] > args.area_lowbound]
 
         # Exclude attributes matching user input patterns, or if they are all nans
@@ -76,87 +89,101 @@ def main():
         array = dataset_acut.values
         X = array[:,2:ds_x].astype(float)
         Y = array[:,1].astype(int)
+        Y = Y - 1 # Convert from 1s and 2s to 0-1
 
         # Set nans to 0
         X = np.nan_to_num(X)
-
-        # Scale!
-        X_scaled = X # preprocessing.scale(X)
-        X_scaled_classified = X_scaled[Y > 0]
-        Y_classified = Y[Y > 0]
 
         # Separate test data
         test_size = 0.2
         seed = 5
         X_train, X_test, Y_train, Y_test = model_selection.train_test_split(
-                X_scaled_classified, Y_classified, test_size=test_size,
+                X, Y, test_size=test_size,
                 random_state=seed)
 
-        # Test options and evaluation metric
-        scoring = 'accuracy'
+        # Convert data to xgboost matrices
+        d_train = xgb.DMatrix(X_train,label=Y_train)
+        # d_test = xgb.DMatrix(X_test,label=Y_test)
+       
+        #----------------------------------------------------------------------
+        # Paramater tuning
 
-        # Spot Check Algorithms
-        models = []
-        models.append(('RF10',RandomForestClassifier(n_estimators=10,n_jobs = 4)))
-        # models.append(('RF64',RandomForestClassifier(n_estimators=64)))
-        # models.append(('RF80',RandomForestClassifier(n_estimators=80)))
-        # models.append(('RF100',RandomForestClassifier(n_estimators=100)))
-        # models.append(('RF120',RandomForestClassifier(n_estimators=120)))
-              
-        # evaluate each model in turn
-        results = []
-        names = []
-        for name, model in models:
-                kfold = model_selection.KFold(n_splits=10, random_state=seed)
-                cv_results = model_selection.cross_val_score(model, X_train, Y_train,
-                                                             cv=kfold, scoring=scoring)
-                results.append(cv_results)
-                names.append(name)
-                msg = "%s: %f (%f)" % (name, cv_results.mean(), cv_results.std())
-                print(msg)
-
-
-        # Define random forest
-        rf = RandomForestClassifier(n_estimators = args.ntrees,criterion="gini",n_jobs = 4)
-
-        # # Get learning curve for random forest
-        # kfold = model_selection.KFold(n_splits=10, random_state=seed)
-        # t_sizes, t_scores, cv_scores = model_selection.learning_curve(rf, X_train, Y_train, cv=kfold, scoring=scoring,train_sizes=np.array([ 0.1, 0.2, 0.3, 0.4,.5,.6,.7,.8,.9, 1. ]))
-        # t_scores_mean = np.mean(t_scores,axis=1)
-        # cv_scores_mean = np.mean(cv_scores,axis=1)
-        # plt.plot(t_sizes,t_scores_mean,'r--',t_sizes,cv_scores_mean,'b--')
-        # plt.show()
-
-        # Make predictions on test dataset
-        rf.fit(X_train, Y_train)
-
-        # Get importances
-        if args.print_imp:
-                importances = rf.feature_importances_
-                std = np.std([tree.feature_importances_ for tree in rf.estimators_],
-                             axis=0)
-                indices = np.argsort(importances)[::-1]
-
-                # Print the feature ranking
-                print("Feature ranking:")
-                for f in range(X_train.shape[1]):
-                        print("%d. %s (%f)" % (f + 1, feature_names[f], importances[indices[f]]))
-
+        # Step 1: Find approximate n_estimators to use
+        early_stop_rounds = 40
+        n_folds = 5
+        xgb_model = xgb.XGBClassifier(
+            learning_rate =0.5,
+            n_estimators=1000,
+            max_depth=5,
+            min_child_weight=1,
+            gamma=0,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            objective= 'binary:logistic',
+            seed=27)
+        xgb_params = xgb_model.get_xgb_params() 
+        cvresult = xgb.cv(xgb_params, d_train, 
+            num_boost_round=xgb_params['n_estimators'], nfold=n_folds,
+            metrics='auc', early_stopping_rounds=early_stop_rounds,
+            )
+        n_est_best = (cvresult.shape[0] - early_stop_rounds)
+        print('Best number of rounds = {}'.format(n_est_best))
         
-        # For training accuracy
-        rf_train_predict = rf.predict(X_train)
-        
-        print("Training acc = " + str(accuracy_score(Y_train,rf_train_predict)))
-        # For test accuracy
-        rf_predictions = rf.predict(X_test)
-        print("RF CV acc = " + str(accuracy_score(Y_test, rf_predictions)))
-        print(confusion_matrix(Y_test, rf_predictions))
-        print(classification_report(Y_test, rf_predictions))
+        # Step 2: Tune hyperparameters
+        xgb_model = xgb.XGBClassifier()
+
+        params = {'max_depth': range(5,10,2),
+                'learning_rate': [0.5],
+                'gamma':[0,0.5,1,2],
+                'silent': [1], 
+                'objective': ['binary:logistic'],
+                'n_estimators' : [n_est_best],
+                'subsample' : [0.5, 0.75,1],
+                'min_child_weight' : range(1,6,2),
+                'colsample_bytree':[0.5,0.75,1],
+                }
+        clf = GridSearchCV(xgb_model,params,n_jobs = 1,
+                cv = StratifiedKFold(Y_train,
+                n_folds=5, shuffle=True),
+                scoring = 'roc_auc',
+                verbose = 2,
+                refit = True)
+        clf.fit(X_train,Y_train)
+
+        best_parameters,score,_ = max(clf.grid_scores_,key=lambda x: x[1])
+        print('Raw AUC score:',score)
+        for param_name in sorted(best_parameters.keys()):
+            print("%s: %r" % (param_name, best_parameters[param_name]))
+
+        # Step 3: Decrease learning rate and up the # of trees
+        #xgb_finalcv = XGBClassifier()
+        tuned_params = clf.best_params_
+        tuned_params['n_estimators'] = 10000
+        tuned_params['learning_rate'] = 0.01
+        cvresult = xgb.cv(tuned_params, d_train, 
+            num_boost_round=tuned_params['n_estimators'], nfold=n_folds,
+            metrics='auc', early_stopping_rounds=early_stop_rounds,
+            )
+
+        # Train model with cv results and predict on test set For test accuracy
+        n_est_final = int((cvresult.shape[0] - early_stop_rounds) / (1 - 1 / n_folds))
+        tuned_params['n_estimators'] = n_est_final
+        print(tuned_params)
+        xgb_train = xgb.XGBClassifier()
+        xgb_train.set_params(**tuned_params)
+        xgb_train.fit(X_train,Y_train)
+        bst_preds = xgb_train.predict(X_test)
+        print("Xgboost Test acc = " + str(accuracy_score(Y_test, bst_preds)))
+        print(confusion_matrix(Y_test, bst_preds))
+        print(classification_report(Y_test, bst_preds))
+        # Export cv classifier
+        joblib.dump(cvresult, args.path_prefix + args.xgb_pkl + 'cv')         
                 
         # Export classifier trained on full data set
-        rf_full = RandomForestClassifier(n_estimators = args.ntrees)
-        rf_full.fit(X_scaled_classified,Y_classified)
-        joblib.dump(rf, args.path_prefix + args.rf_pkl)
-        
+        xgb_full = xgb.XGBClassifier()
+        xgb_full.set_params(**tuned_params)
+        xgb_full.fit(X,Y)
+        joblib.dump(xgb_full, args.path_prefix + args.xgb_pkl) 
+
 if __name__ == '__main__':
         main()
