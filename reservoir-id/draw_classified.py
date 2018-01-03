@@ -32,8 +32,8 @@ args = parser.parse_args()
 predict_column = 'clf_pred'
 
 def draw_single_tile(tile,tile_ids_all,reg_nums,predictions,tile_dir):
-    pos_regions = reg_nums[(tile_ids_all == tile) & (predictions == 2)]
-    neg_regions = reg_nums[(tile_ids_all == tile) & (predictions == 1)]
+    pos_regions = reg_nums[(tile_ids_all == tile) & (predictions == 1)]
+    neg_regions = reg_nums[(tile_ids_all == tile) & (predictions == 0)]
 
     pos_temp_val = 3
     neg_temp_val = 2
@@ -56,6 +56,7 @@ def draw_single_tile(tile,tile_ids_all,reg_nums,predictions,tile_dir):
     
     read_write.write_image(wat_im,labeled_im_path,tile_dir + \
                            "/classified/classified_" + tile + ".tif",gdal.GDT_Byte)
+    return()
               
 def draw_classified(classified_csv,tile_dir):
 
@@ -65,6 +66,7 @@ def draw_classified(classified_csv,tile_dir):
     tile_ids_unique = np.unique(tile_ids_all)
     reg_nums = np.array([ int(i.split('-')[1]) for i in class_df['id'] ])
     predictions = np.array((class_df[predict_column]))
+    print(sum(predictions==1))
     partial_draw = partial(draw_single_tile,tile_ids_all=tile_ids_all,
                            reg_nums=reg_nums,predictions=predictions,
                            tile_dir=tile_dir)
