@@ -41,7 +41,7 @@ def resonly(tile_path, res_class):
 
 def combine_classified(file_pattern,res_class,output_vrt):
     partial_resonly = partial(resonly, res_class = res_class)
-    pool = mp.Pool(mp.cpu_count()-2)
+    pool = mp.Pool(mp.cpu_count()-1)
     pool.map(partial_resonly,glob.glob(file_pattern))
     pool.close()
     pool.join()

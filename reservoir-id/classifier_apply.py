@@ -78,8 +78,8 @@ def main():
         clf_pred = clf.predict(X)
         dataset_out = dataset_acut
         dataset_out["clf_pred"] = clf_pred
-        print(str(sum(clf_pred == 0)) + " classified as positive")
-        print(str(sum(clf_pred == 1)) + " classified as negative")
+        print(str(sum(clf_pred == 1)) + " classified as positive")
+        print(str(sum(clf_pred == 0)) + " classified as negative")
         dataset_out.to_csv(args.path_prefix + args.class_csv_out,index=False)
         
 if __name__ == '__main__':

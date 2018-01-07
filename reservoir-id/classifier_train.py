@@ -34,16 +34,10 @@ parser.add_argument('prop_csv',
 parser.add_argument('xgb_pkl',
                     help='Path to save random forest model as .pkl.',
                     type=str)
-parser.add_argument('--ntrees',
-                    help='Number of trees for random forest',
-                    type=int,default=200)
 parser.add_argument('--area_lowbound',
                     help='Lower area bound. All regions <= in size will be ignored',
                     default=2,
                     type=int)
-parser.add_argument('--print_imp',
-                    help='Print variable importances',
-                    action='store_true')
 parser.add_argument('--path_prefix',
                     help='To be placed at beginnings of all other path args',
                     type=str,default='')
@@ -89,7 +83,7 @@ def main():
         array = dataset_acut.values
         X = array[:,2:ds_x].astype(float)
         Y = array[:,1].astype(int)
-        Y = Y - 1 # Convert from 1s and 2s to 0-1
+        Y = Y-1 # Convert from 1s and 2s to 0-1
 
         # Set nans to 0
         X = np.nan_to_num(X)
@@ -112,7 +106,7 @@ def main():
         early_stop_rounds = 40
         n_folds = 5
         xgb_model = xgb.XGBClassifier(
-            learning_rate =0.5,
+            learning_rate =0.1,
             n_estimators=1000,
             max_depth=5,
             min_child_weight=1,
@@ -133,14 +127,14 @@ def main():
         xgb_model = xgb.XGBClassifier()
 
         params = {'max_depth': range(5,10,2),
-                'learning_rate': [0.5],
-                'gamma':[0,0.5,1,2],
+                'learning_rate': [0.1],
+                'gamma':[0,0.5,1],
                 'silent': [1], 
                 'objective': ['binary:logistic'],
                 'n_estimators' : [n_est_best],
-                'subsample' : [0.5, 0.75,1],
-                'min_child_weight' : range(1,6,2),
-                'colsample_bytree':[0.5,0.75,1],
+                'subsample' : [0.7, 0.8,1],
+                'min_child_weight' : range(1,4,2),
+                'colsample_bytree':[0.7,0.8,1],
                 }
         clf = GridSearchCV(xgb_model,params,n_jobs = 1,
                 cv = StratifiedKFold(Y_train,
