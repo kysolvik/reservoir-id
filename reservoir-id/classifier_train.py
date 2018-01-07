@@ -83,7 +83,7 @@ def main():
         array = dataset_acut.values
         X = array[:,2:ds_x].astype(float)
         Y = array[:,1].astype(int)
-        Y[Y==2] = 0 # Convert from 1s and 2s to 0-1
+        Y = Y-1 # Convert from 1s and 2s to 0-1
 
         # Set nans to 0
         X = np.nan_to_num(X)
