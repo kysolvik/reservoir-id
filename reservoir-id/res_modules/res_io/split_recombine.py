@@ -32,7 +32,7 @@ def split_raster(in_tif,out_dir,out_prefix,tile_size_x,tile_size_y,
                         command_list.append(com_string)
 
         # Run all commands
-        pool = mp.Pool(mp.cpu_count()-2)
+        pool = mp.Pool(mp.cpu_count()-1)
         pool.map(os.system,command_list)
 
         return("Done with split")
