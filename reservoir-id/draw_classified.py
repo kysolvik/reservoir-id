@@ -32,8 +32,8 @@ args = parser.parse_args()
 predict_column = 'clf_pred'
 
 def draw_single_tile(tile,tile_ids_all,reg_nums,predictions,tile_dir):
-    pos_regions = reg_nums[(tile_ids_all == tile) & (predictions == 2)]
-    neg_regions = reg_nums[(tile_ids_all == tile) & (predictions == 1)]
+    pos_regions = reg_nums[(tile_ids_all == tile) & (predictions == 1)]
+    neg_regions = reg_nums[(tile_ids_all == tile) & (predictions == 0)]
 
     pos_temp_val = 3
     neg_temp_val = 2
