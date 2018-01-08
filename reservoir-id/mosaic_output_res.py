@@ -18,8 +18,8 @@ parser = argparse.ArgumentParser(description='Creates mosaic of ONLY reservoir o
 parser.add_argument('classified_im_pattern',
                     help='Pattern for glob to find classified images',
                     type=str)
-parser.add_argument('res_mosaic_vrt',
-                    help='VRT for saving mosaiced reservoir image',
+parser.add_argument('res_mosaic_tif',
+                    help='Tif for saving mosaiced reservoir image',
                     type=str)
 parser.add_argument('--reservoir_class',
                     help='Integer for reservoir class in classified images',
@@ -39,24 +39,27 @@ def resonly(tile_path, res_class):
                   "--outfile=" + tile_noext + "_resonly.tif")
     return()
 
-def combine_classified(file_pattern,res_class,output_vrt):
+def combine_classified(file_pattern,res_class,output_tif):
     partial_resonly = partial(resonly, res_class = res_class)
-    pool = mp.Pool(mp.cpu_count()-2)
+    pool = mp.Pool(mp.cpu_count()-1)
     pool.map(partial_resonly,glob.glob(file_pattern))
     pool.close()
     pool.join()
 
     # Build vrt
+    temp_vrt =  path.splitext(output_tif)[0] + '.vrt'
     resonly_pattern = path.dirname(args.classified_im_pattern) + "/*_resonly.tif"
-    os.system("gdalbuildvrt " + output_vrt + " " + resonly_pattern)
-    os.system('gdal_translate -co "COMPRESS=LZW" ' + output_vrt + ' ' + 
-              path.splitext(output_vrt)[0] + '.tif')
+    os.system("gdalbuildvrt " + temp_vrt + " " + resonly_pattern)
+
+    # Translate to tif
+    os.system('gdal_translate -co "COMPRESS=LZW" ' + temp_vrt + ' ' + 
+              output_tif)
     return()
 
 def main():
     combine_classified(args.path_prefix + args.classified_im_pattern,
                        args.reservoir_class,
-                       args.path_prefix + args.res_mosaic_vrt)
+                       args.path_prefix + args.res_mosaic_tif)
     return()
 
 if __name__ == '__main__':
