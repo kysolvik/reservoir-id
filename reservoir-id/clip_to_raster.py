@@ -65,7 +65,7 @@ def check_delete(filename):
 
 def reproject_class_tile(tile_path):
     out_tif = args.temp_dir + 'class_temp_' + os.path.basename(tile_path)
-    subprocess.call(['gdalwarp','-overwrite','-tr','30','30','-t_srs',
+    subprocess.call(['gdalwarp','-wm','500','-overwrite','-tr','30','30','-t_srs',
                      '+proj=aea +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 '+
                      '+x_0=0 +y_0=0 +ellps=aust_SA +towgs84=-57,1,-41,0,0,0,0'+
                      '+units=m +no_defs',
@@ -80,7 +80,7 @@ def align_rasters(big_tif,target_tif,class_tile_path):
     maxy = geoTransform[3]
     maxx = minx + geoTransform[1] * data.RasterXSize
     miny = maxy + geoTransform[5] * data.RasterYSize
-    subprocess.call(['gdalwarp','-overwrite','-te',str(minx),str(miny),
+    subprocess.call(['gdalwarp','-wm','500','-overwrite','-te',str(minx),str(miny),
                      str(maxx),str(maxy),big_tif,out_tif])
     return(out_tif)
 
@@ -99,8 +99,8 @@ def clip_by_landuse(class_tile_path):
     class_im, geotrans = read_write.read_image(class_tile_reproj)
     clip_im, geotrans = read_write.read_image(clip_tile)
     out_im = np.copy(class_im)
-    out_im[out_im<3] = 0
-    out_im[out_im==3] = 1
+    out_im[out_im!=2] = 0
+    out_im[out_im==2] = 1
     
     # Label and get regionprops
     class_labeled = label(out_im)
@@ -109,7 +109,6 @@ def clip_by_landuse(class_tile_path):
     # Clip outputs
     for i in range(0,len(plist)):
         if not args.noclip:
-            print(args.noclip)
             if args.clip_type=='pos':
                 if plist[i].min_intensity > args.clip_cutoff:
                     out_im[class_labeled == plist[i].label] = 0
