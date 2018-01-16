@@ -99,8 +99,8 @@ def clip_by_landuse(class_tile_path):
     class_im, geotrans = read_write.read_image(class_tile_reproj)
     clip_im, geotrans = read_write.read_image(clip_tile)
     out_im = np.copy(class_im)
-    out_im[out_im!=2] = 0
-    out_im[out_im==2] = 1
+    out_im[out_im!=3] = 0
+    out_im[out_im==3] = 1
     
     # Label and get regionprops
     class_labeled = label(out_im)
